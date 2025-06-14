@@ -1,0 +1,11 @@
+flask
+pillow
+imagehash
+torch
+open_clip_torch
+scikit-learn
+animeface
+numpy
+huggingface-hub
+realesrgan
+opencv-python

@@ -24,11 +24,19 @@ progress = {"step": 0, "total": 8, "name": "Idle"}
 zip_result: Path | None = None
 
 
+REPO_ROOT = Path(__file__).resolve().parent
+
+
 def get_commit_id() -> str:
-    """Return the short git commit hash for the current repo."""
+    """Return the short git commit hash for the repository.
+
+    Falls back to ``unknown`` if ``git`` is unavailable or the repo is missing.
+    """
     try:
         return (
-            subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
+            subprocess.check_output(
+                ["git", "-C", str(REPO_ROOT), "rev-parse", "--short", "HEAD"]
+            )
             .decode()
             .strip()
         )

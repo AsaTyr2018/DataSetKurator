@@ -25,7 +25,7 @@ check_models() {
 import sys
 import open_clip
 
-repo = "SmilingWolf/wd-v1-4-swinv2-tagger-v3"
+repo = "SmilingWolf/wd-swinv2-tagger-v3"
 try:
     open_clip.create_model_and_transforms(f"hf-hub:{repo}")
 except Exception as exc:

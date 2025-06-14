@@ -33,6 +33,8 @@ HAIR_COLORS = [
 HAIR_LENGTHS = [
     "long hair",
     "short hair",
+    "twintails",
+    "ponytail",
 ]
 
 ACCESSORIES = [

@@ -25,18 +25,18 @@ check_models() {
 import sys
 import open_clip
 
-model = "swinv2_base_patch4_window8_256"
-if model not in open_clip.list_models():
-    sys.stderr.write(f"Required model '{model}' not available in open_clip\n")
-    sys.exit(1)
 
+# Verify that required ML models can be loaded before enabling the service.
+check_models() {
+  "$APP_DIR/venv/bin/python" - <<'PY'
+import sys
+import open_clip
+
+repo = "SmilingWolf/wd-v1-4-swinv2-tagger-v3"
 try:
-    open_clip.create_model_and_transforms(
-        model,
-        pretrained="hf-hub:SmilingWolf/wd-v1-4-swinv2-tagger-v3",
-    )
+    open_clip.create_model_and_transforms(f"hf-hub:{repo}")
 except Exception as exc:
-    sys.stderr.write(f"Failed to load tagger weights: {exc}\n")
+    sys.stderr.write(f"Failed to download tagger model: {exc}\n")
     sys.exit(1)
 PY
 }

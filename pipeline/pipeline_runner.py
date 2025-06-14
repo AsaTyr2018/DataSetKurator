@@ -7,10 +7,18 @@ from .steps import frame_extraction, deduplication, classification, filtering, u
 
 
 class Pipeline:
-    def __init__(self, input_dir: Path, output_dir: Path, work_dir: Path):
+    def __init__(
+        self,
+        input_dir: Path,
+        output_dir: Path,
+        work_dir: Path,
+        *,
+        yolo_model: Path | None = None,
+    ) -> None:
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.work_dir = work_dir
+        self.yolo_model = yolo_model
 
     def cleanup(self):
         if self.work_dir.exists():
@@ -55,7 +63,11 @@ class Pipeline:
             shutil.rmtree(work_filter)
 
             work_crop = self.work_dir / 'cropping'
-            cropped = cropping.run(upscaled, work_crop)
+            cropped = cropping.run(
+                upscaled,
+                work_crop,
+                yolo_model=self.yolo_model,
+            )
             shutil.rmtree(work_upscale)
 
             captions_dir = self.output_dir / 'captions'

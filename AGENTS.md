@@ -42,11 +42,11 @@ Tools: FiftyOne, `img-dupes`, `imgsim`, eigene Hash-Vergleiche
 
 Ziel: Bilder nach Charakteren aufteilen – Animes enthalten meist viele Charaktere
 
-Methode:
+ Methode:
 
- Manuelle Klassifikation über GUI z. B. FiftyOne mit Tagging
- Automatisierte Klassifikation durch Pre-LoRA Detection z. B. eigene CLIP-basierte Modelle oder Classifier
- Optional: Embedding Clustering + Human Review z. B. mit `CLIP+UMAP`
+  ~~Manuelle Klassifikation über GUI z. B. FiftyOne mit Tagging~~
+  ~~Automatisierte Klassifikation durch Pre-LoRA Detection z. B. eigene CLIP-basierte Modelle oder Classifier~~
+  ~~Optional: Embedding Clustering + Human Review z. B. mit `CLIP+UMAP`~~
 
  Wichtig: Ohne korrekte Trennung der Charaktere leidet das Modell durch Stilvermischung
 
@@ -77,7 +77,7 @@ Ziel: Caption-Dateien erstellen für das Training
 Tools:
 
  Automatisch: `WD14-Tagger`, `DeepDanbooru`
- Manuell prüfen & nachbessern
+ ~~Manuell prüfen & nachbessern~~
  Einheitliche Benennung: `charname_outfit_emotion_background.png`
 
 Beispiel-Caption Textdatei pro Bild:

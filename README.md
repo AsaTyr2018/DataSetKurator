@@ -11,8 +11,8 @@ DataSetKurator turns an anime film into a dataset ready for LoRA training. Every
 5. **Cropping** – faces cut out using `animeface` or a YOLOv8 model automatically detected in `models/`
 6. **Annotation** – WD14 tagger generates captions
 7. **Character Classification** – images grouped by detected hair and eye color
-   (`<hair>_<eyes>`). Unknown images are automatically clustered with
-   CLIP+UMAP for easier review.
+   with optional style hints like hair length and glasses (`<hair>_<eyes>[_length][ _accessory]`).
+   Unknown images are automatically clustered with CLIP+UMAP for easier review.
 8. **Packaging** – images and captions are zipped for download
 
 ## Install via setup script

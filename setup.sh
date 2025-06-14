@@ -25,6 +25,13 @@ check_models() {
 import sys
 import open_clip
 
+
+# Verify that required ML models can be loaded before enabling the service.
+check_models() {
+  "$APP_DIR/venv/bin/python" - <<'PY'
+import sys
+import open_clip
+
 repo = "SmilingWolf/wd-v1-4-swinv2-tagger-v3"
 try:
     open_clip.create_model_and_transforms(f"hf-hub:{repo}")

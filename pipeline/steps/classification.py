@@ -1,4 +1,4 @@
-"""Character classification based on hair and eye color detection."""
+"""Character classification based on hair, eye and style detection."""
 
 from pathlib import Path
 from typing import List
@@ -30,6 +30,15 @@ HAIR_COLORS = [
     "aqua hair",
 ]
 
+HAIR_LENGTHS = [
+    "long hair",
+    "short hair",
+]
+
+ACCESSORIES = [
+    "glasses",
+]
+
 EYE_COLORS = [
     "blue eyes",
     "brown eyes",
@@ -51,10 +60,19 @@ def _detect_color(tag_str: str, colors: List[str], suffix: str) -> str:
     return "unknown"
 
 
-def _detect_attributes(tag_str: str) -> tuple[str, str]:
+def _detect_feature(tag_str: str, features: List[str]) -> str:
+    for f in features:
+        if f in tag_str:
+            return f.replace(" ", "_")
+    return "none"
+
+
+def _detect_attributes(tag_str: str) -> tuple[str, str, str, str]:
     hair = _detect_color(tag_str, HAIR_COLORS, " hair")
     eyes = _detect_color(tag_str, EYE_COLORS, " eyes")
-    return hair, eyes
+    length = _detect_feature(tag_str, HAIR_LENGTHS)
+    accessory = _detect_feature(tag_str, ACCESSORIES)
+    return hair, eyes, length, accessory
 
 
 def _cluster_unknowns(unclassified_dir: Path, *, n_clusters: int = 5) -> None:
@@ -92,7 +110,7 @@ def _cluster_unknowns(unclassified_dir: Path, *, n_clusters: int = 5) -> None:
 
 
 def run(images_dir: Path, workdir: Path) -> Path:
-    """Group images into folders based on detected hair and eye color."""
+    """Group images into folders based on detected hair, eye and style tags."""
 
     workdir.mkdir(parents=True, exist_ok=True)
     log_step("Classification started")
@@ -110,12 +128,17 @@ def run(images_dir: Path, workdir: Path) -> Path:
         return workdir
 
     for img_path in sorted(images_dir.glob("*.png")):
-        tag_str = _tag_image(session, img_size, img_path, tags)
-        hair, eyes = _detect_attributes(tag_str)
+        tag_str = _tag_image(session, img_size, img_path, tags, threshold=0.25)
+        hair, eyes, length, accessory = _detect_attributes(tag_str)
         if hair == "unknown" or eyes == "unknown":
             char_dir = workdir / "unclassified"
         else:
-            char_dir = workdir / f"{hair}_{eyes}"
+            parts = [hair, eyes]
+            if length != "none":
+                parts.append(length)
+            if accessory != "none":
+                parts.append(accessory)
+            char_dir = workdir / "_".join(parts)
         char_dir.mkdir(exist_ok=True)
         shutil.copy(img_path, char_dir / img_path.name)
 

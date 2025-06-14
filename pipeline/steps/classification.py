@@ -1,7 +1,7 @@
 """Character classification using CLIP embeddings and DBSCAN clustering."""
 
 from pathlib import Path
-from typing import List
+from typing import List, Any
 import shutil
 
 import numpy as np
@@ -13,7 +13,7 @@ from sklearn.cluster import DBSCAN
 from ..logging_utils import log_step
 
 
-def _load_model(device: torch.device) -> tuple[torch.nn.Module, open_clip.Preprocess]:
+def _load_model(device: torch.device) -> tuple[torch.nn.Module, Any]:
     """Load an anime-focused CLIP model from the Hugging Face Hub."""
     model, _, preprocess = open_clip.create_model_and_transforms(
         "ViT-B-16",
@@ -25,7 +25,7 @@ def _load_model(device: torch.device) -> tuple[torch.nn.Module, open_clip.Prepro
 
 
 def _embed_images(
-    model: torch.nn.Module, preprocess: open_clip.Preprocess, images: List[Path], device: torch.device
+    model: torch.nn.Module, preprocess: Any, images: List[Path], device: torch.device
 ) -> np.ndarray:
     """Compute normalized CLIP embeddings for all images."""
     features = []

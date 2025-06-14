@@ -6,7 +6,7 @@ A minimal pipeline to convert an uploaded video into a basic dataset. Steps are 
 
 1. Install dependencies
    ```bash
-   pip install flask
+   pip install flask pillow imagehash
    ```
    Ensure `ffmpeg` is installed and available in your `PATH`.
    On Debian-based systems:
@@ -20,3 +20,6 @@ A minimal pipeline to convert an uploaded video into a basic dataset. Steps are 
 3. Open `http://localhost:8000` in your browser
 
 Upload a video, start the pipeline and download the resulting zip file.
+
+The second stage of the pipeline removes near-duplicate frames using
+perceptual hashing so that only unique images are kept for classification.

@@ -6,7 +6,8 @@ A minimal pipeline to convert an uploaded video into a basic dataset. Steps are 
 
 1. Install dependencies
    ```bash
-   pip install flask pillow imagehash torch open_clip_torch scikit-learn
+   pip install flask pillow imagehash torch open_clip_torch scikit-learn \
+       animeface numpy
    ```
    Ensure `ffmpeg` is installed and available in your `PATH`.
    On Debian-based systems:
@@ -25,3 +26,5 @@ The second stage of the pipeline removes near-duplicate frames using
 perceptual hashing so that only unique images are kept for classification.
 The third stage uses an anime-focused CLIP model and DBSCAN clustering to
 automatically group frames by character.
+The cropping stage relies on the ``animeface`` library to detect faces and
+produce crops around them, keeping the entire image when no face is found.

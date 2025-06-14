@@ -9,6 +9,8 @@ DataSetKurator turns an anime film into a dataset ready for LoRA training. Every
 3. **Character Classification** – CLIP embeddings clustered via DBSCAN
    *If the dedicated anime weights cannot be downloaded, the step automatically
    falls back to the standard OpenAI CLIP weights.*
+   Hair and eye color are detected with the WD14 tagger so images are also
+   sorted into folders named `hair_<color>_eyes_<color>`.
 4. **Filtering** – remove unwanted shots
 5. **Upscaling & Quality Check** – RealESRGAN or PIL resize with blur/dark checks
 6. **Cropping** – faces cut out using `animeface` or a YOLOv8 model automatically detected in `models/`

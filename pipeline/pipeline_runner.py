@@ -67,13 +67,9 @@ class Pipeline:
             deduped = deduplication.run(frames, work_dedup)
             shutil.rmtree(work_frames)
 
-            work_class = self.work_dir / 'classification'
-            classified = classification.run(deduped, work_class)
-            shutil.rmtree(work_dedup)
-
             work_filter = self.work_dir / 'filtering'
-            filtered = filtering.run(classified, work_filter)
-            shutil.rmtree(work_class)
+            filtered = filtering.run(deduped, work_filter)
+            shutil.rmtree(work_dedup)
 
             work_upscale = self.work_dir / 'upscaling'
             upscaled = upscaling.run(filtered, work_upscale)
@@ -88,11 +84,13 @@ class Pipeline:
             shutil.rmtree(work_upscale)
 
             captions_dir = self.output_dir / 'captions'
-            images_dir = self.output_dir / 'images'
-            images_dir.mkdir(exist_ok=True)
-            for img in sorted(cropped.glob('*.png')):
-                shutil.copy(img, images_dir / img.name)
             annotation.run(cropped, captions_dir, trigger_word=trigger_word)
+
+            work_class = self.work_dir / 'classification'
+            classified = classification.run(cropped, work_class)
+            images_dir = self.output_dir / 'images'
+            shutil.copytree(classified, images_dir)
+            shutil.rmtree(work_class)
             shutil.rmtree(work_crop)
 
             # Zip output

@@ -1,14 +1,10 @@
-"""Character classification using CLIP embeddings and DBSCAN clustering."""
+"""Character classification based on hair and eye color detection."""
 
 from pathlib import Path
-from typing import List, Any
+from typing import List
 import shutil
 
-import numpy as np
-from PIL import Image
 import torch
-import open_clip
-from sklearn.cluster import DBSCAN
 
 from ..logging_utils import log_step
 from .annotation import _load_tagger, _tag_image
@@ -56,79 +52,33 @@ def _detect_attributes(tag_str: str) -> tuple[str, str]:
     return hair, eyes
 
 
-def _load_model(device: torch.device) -> tuple[torch.nn.Module, Any]:
-    """Load an anime-focused CLIP model with fallback to the OpenAI weights."""
-    try:
-        model, _, preprocess = open_clip.create_model_and_transforms(
-            "ViT-B-16",
-            pretrained="hf-hub:dudcjs2779/anime-style-tag-clip",
-            device=device,
-        )
-    except Exception as exc:  # pragma: no cover - external download may fail
-        log_step(f"Custom weights unavailable: {exc}; falling back to 'openai'")
-        model, _, preprocess = open_clip.create_model_and_transforms(
-            "ViT-B-16",
-            pretrained="openai",
-            device=device,
-        )
-    model.eval()
-    return model, preprocess
+def run(images_dir: Path, workdir: Path) -> Path:
+    """Group images into folders based on detected hair and eye color."""
 
-
-def _embed_images(
-    model: torch.nn.Module, preprocess: Any, images: List[Path], device: torch.device
-) -> np.ndarray:
-    """Compute normalized CLIP embeddings for all images."""
-    features = []
-    for img_path in images:
-        with Image.open(img_path).convert("RGB") as img:
-            img_tensor = preprocess(img).unsqueeze(0).to(device)
-        with torch.no_grad():
-            emb = model.encode_image(img_tensor)
-        emb = emb.cpu().numpy()[0]
-        emb /= np.linalg.norm(emb)
-        features.append(emb)
-    return np.stack(features)
-
-
-def run(frames_dir: Path, workdir: Path, eps: float = 0.3, min_samples: int = 2) -> Path:
-    """Group frames by character using DBSCAN clustering on CLIP embeddings."""
     workdir.mkdir(parents=True, exist_ok=True)
     log_step("Classification started")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model, preprocess = _load_model(device)
-
-    images = sorted(frames_dir.glob("*.png"))
-    if not images:
-        log_step("No frames found for classification")
-        return workdir
-
-    embeddings = _embed_images(model, preprocess, images, device)
-
-    clusterer = DBSCAN(eps=eps, min_samples=min_samples, metric="cosine")
-    labels = clusterer.fit_predict(embeddings)
-
-    # optional hair and eye color detection
     try:
         session, img_size, tags = _load_tagger(device)
     except Exception as exc:  # pragma: no cover - download may fail
-        log_step(f"Tagger unavailable: {exc}; skipping attribute classification")
-        session = None
+        log_step(f"Tagger unavailable: {exc}; putting all images in 'unclassified'")
+        for img in sorted(images_dir.glob("*.png")):
+            char_dir = workdir / "unclassified"
+            char_dir.mkdir(exist_ok=True)
+            shutil.copy(img, char_dir / img.name)
+        log_step("Classification completed with fallback")
+        return workdir
 
-    for img_path, label in zip(images, labels):
-        label_dir = workdir / (f"character_{label}" if label >= 0 else "unclassified")
-        label_dir.mkdir(exist_ok=True)
-        shutil.copy(img_path, label_dir / img_path.name)
-
-        hair = "unknown"
-        eyes = "unknown"
-        if session is not None:
-            tag_str = _tag_image(session, img_size, img_path, tags)
-            hair, eyes = _detect_attributes(tag_str)
-        attr_dir = workdir / f"hair_{hair}_eyes_{eyes}"
-        attr_dir.mkdir(exist_ok=True)
-        shutil.copy(img_path, attr_dir / img_path.name)
+    for img_path in sorted(images_dir.glob("*.png")):
+        tag_str = _tag_image(session, img_size, img_path, tags)
+        hair, eyes = _detect_attributes(tag_str)
+        if hair == "unknown" or eyes == "unknown":
+            char_dir = workdir / "unclassified"
+        else:
+            char_dir = workdir / f"{hair}_{eyes}"
+        char_dir.mkdir(exist_ok=True)
+        shutil.copy(img_path, char_dir / img_path.name)
 
     log_step("Classification completed")
     return workdir

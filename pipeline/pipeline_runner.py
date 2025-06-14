@@ -5,6 +5,8 @@ import zipfile
 from .logging_utils import log_step
 from .steps import frame_extraction, deduplication, classification, filtering, upscaling, cropping, annotation
 
+MODELS_DIR = Path("models")
+
 
 class Pipeline:
     def __init__(
@@ -18,7 +20,22 @@ class Pipeline:
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.work_dir = work_dir
-        self.yolo_model = yolo_model
+        if yolo_model is not None:
+            self.yolo_model = yolo_model
+        else:
+            self.yolo_model = self._detect_yolo_model()
+
+    def _detect_yolo_model(self) -> Path | None:
+        """Return a YOLOv8 weight file from ``models/`` if present."""
+        MODELS_DIR.mkdir(exist_ok=True)
+        patterns = ["*yolo*.pt", "*yolo*.pth"]
+        for pattern in patterns:
+            models = sorted(MODELS_DIR.glob(pattern))
+            if models:
+                log_step(f"Found YOLO model: {models[0]}")
+                return models[0]
+        log_step("No YOLO model found")
+        return None
 
     def cleanup(self):
         if self.work_dir.exists():

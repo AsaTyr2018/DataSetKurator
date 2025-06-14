@@ -9,3 +9,6 @@ realesrgan
 opencv-python
 onnxruntime
 ultralytics
+open_clip_torch
+umap-learn
+scikit-learn

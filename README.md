@@ -1,33 +1,49 @@
-# DataSetKurator
+# ✨ DataSetKurator ✨
 
-A minimal pipeline to convert an uploaded video into a basic dataset. Steps are logged to `logs/process.log`.
+DataSetKurator turns an anime film into a dataset ready for LoRA training. Every step is logged to `logs/process.log`.
 
-## Usage
+## Pipeline Overview
 
-1. Install dependencies
-   ```bash
-   pip install flask pillow imagehash torch open_clip_torch scikit-learn \
-       animeface numpy
-   ```
-   Ensure `ffmpeg` is installed and available in your `PATH`.
-   On Debian-based systems:
-   ```bash
-   sudo apt-get install ffmpeg
-   ```
-2. Run the web app
-   ```bash
-   python app.py
-   ```
-3. Open `http://localhost:8000` in your browser
+1. **Frame Extraction** – `ffmpeg` pulls images from the video
+2. **Deduplication** – perceptual hashing drops duplicates
+3. **Character Classification** – CLIP embeddings clustered via DBSCAN
+4. **Filtering** – remove unwanted shots
+5. **Upscaling & Quality Check** – RealESRGAN or PIL resize with blur/dark checks
+6. **Cropping** – faces cut out using `animeface`
+7. **Annotation** – WD14 tagger generates captions
+8. **Packaging** – images and captions are zipped for download
 
-Upload a video, start the pipeline and download the resulting zip file.
+## Install via setup script
 
-The second stage of the pipeline removes near-duplicate frames using
-perceptual hashing so that only unique images are kept for classification.
-The third stage uses an anime-focused CLIP model and DBSCAN clustering to
-automatically group frames by character.
-The cropping stage relies on the ``animeface`` library to detect faces and
-produce crops around them, keeping the entire image when no face is found.
-The annotation stage applies the *WD14* tagger to each cropped image and
-generates a comma-separated list of tags, falling back to a simple
-``anime_style`` caption if the model cannot be loaded.
+Run as root to install the app as a service:
+
+```bash
+sudo ./setup.sh --install
+```
+
+This copies the project to `/opt/DataSetKurator`, creates a virtual environment, installs all Python dependencies and enables a `systemd` service.
+
+To remove the installation run:
+
+```bash
+sudo ./setup.sh --Deinstall
+```
+
+Update an existing installation with:
+
+```bash
+sudo ./setup.sh --Update
+```
+
+## Manual Run
+
+For a local test without the service:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+Open [http://localhost:8000](http://localhost:8000) to upload a video and start the pipeline.

@@ -21,13 +21,6 @@ create_venv() {
 
 # Verify that required ML models can be loaded before enabling the service.
 check_models() {
-  "$APP_DIR/venv/bin/python" - <<'PY'
-import sys
-import open_clip
-
-
-# Verify that required ML models can be loaded before enabling the service.
-check_models() {
   "$APP_DIR/venv/bin/python" <<'PY'
 import sys
 import open_clip

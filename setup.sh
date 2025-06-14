@@ -22,7 +22,8 @@ create_venv() {
 install_app() {
   check_deps
   mkdir -p "$APP_DIR"
-  rsync -a --delete --exclude '.git' "$(dirname "$0")/" "$APP_DIR/"
+  # copy the entire repository including the .git folder so updates work via git
+  rsync -a --delete "$(dirname "$0")/" "$APP_DIR/"
   create_venv
 
   cat > "$SERVICE_FILE" <<SERVICE
@@ -62,7 +63,12 @@ update_app() {
     exit 1
   fi
   check_deps
-  git -C "$APP_DIR" pull
+  if [ -d "$APP_DIR/.git" ]; then
+    git -C "$APP_DIR" pull
+  else
+    # if the installation lacks a git repository, sync the current script
+    rsync -a --delete "$(dirname "$0")/" "$APP_DIR/"
+  fi
   create_venv
   systemctl restart datasetkurator.service
   echo "DataSetKurator updated"

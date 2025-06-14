@@ -11,7 +11,7 @@ DataSetKurator turns an anime film into a dataset ready for LoRA training. Every
    falls back to the standard OpenAI CLIP weights.*
 4. **Filtering** – remove unwanted shots
 5. **Upscaling & Quality Check** – RealESRGAN or PIL resize with blur/dark checks
-6. **Cropping** – faces cut out using `animeface` or an optional YOLOv8 model
+6. **Cropping** – faces cut out using `animeface` or a YOLOv8 model automatically detected in `models/`
 7. **Annotation** – WD14 tagger generates captions
 8. **Packaging** – images and captions are zipped for download
 
@@ -51,7 +51,8 @@ python app.py
 Open [http://localhost:8000](http://localhost:8000) to upload a video and start the pipeline.
 You can optionally set a *trigger word* before starting. This word will be
 prepended as the first tag in every generated caption.
-If a YOLOv8 model path is provided when creating the pipeline, cropping will use
-that detector instead of ``animeface``. Pretrained weights such as
-``AniRef40000-m-epoch75.pt`` can be obtained from the [AniRef-yolov8
-releases](https://github.com/SoulflareRC/AniRef-yolov8/releases).
+Place any YOLOv8 ``.pt`` file inside the new ``models/`` folder. The pipeline
+indexes this directory on startup and automatically uses the first matching
+weight file. If no model is found, cropping falls back to ``animeface``.
+Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
+[AniRef-yolov8 releases](https://github.com/SoulflareRC/AniRef-yolov8/releases).

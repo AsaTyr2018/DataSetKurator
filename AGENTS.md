@@ -67,7 +67,6 @@ Tools: `Real-ESRGAN`, `Topaz`, eigene ESRGAN-Modelle
 Ziel: Fokus auf Gesicht, Oberkörper oder typische Charakter-Darstellung
 Tools: `YOLOv5`, `mediapipe`, `animeface`, `Sefid`, eigenes Cropping-Skript
 
- Standardformate bevorzugen: 512x512 oder 768x768
  Optional: Keyframe-Sets mit unterschiedlichen Zooms/Angles
 
 

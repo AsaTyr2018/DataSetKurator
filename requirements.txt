@@ -9,3 +9,4 @@ numpy
 huggingface-hub
 realesrgan
 opencv-python
+onnxruntime

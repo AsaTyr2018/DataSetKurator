@@ -28,3 +28,6 @@ The third stage uses an anime-focused CLIP model and DBSCAN clustering to
 automatically group frames by character.
 The cropping stage relies on the ``animeface`` library to detect faces and
 produce crops around them, keeping the entire image when no face is found.
+The annotation stage applies the *WD14* tagger to each cropped image and
+generates a comma-separated list of tags, falling back to a simple
+``anime_style`` caption if the model cannot be loaded.

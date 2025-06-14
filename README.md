@@ -7,6 +7,8 @@ DataSetKurator turns an anime film into a dataset ready for LoRA training. Every
 1. **Frame Extraction** – `ffmpeg` pulls images from the video
 2. **Deduplication** – perceptual hashing drops duplicates
 3. **Character Classification** – CLIP embeddings clustered via DBSCAN
+   *If the dedicated anime weights cannot be downloaded, the step automatically
+   falls back to the standard OpenAI CLIP weights.*
 4. **Filtering** – remove unwanted shots
 5. **Upscaling & Quality Check** – RealESRGAN or PIL resize with blur/dark checks
 6. **Cropping** – faces cut out using `animeface`

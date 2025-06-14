@@ -23,11 +23,14 @@ create_venv() {
 check_models() {
   "$APP_DIR/venv/bin/python" <<'PY'
 import sys
-import open_clip
+from huggingface_hub import hf_hub_download
+from onnxruntime import InferenceSession
 
 repo = "SmilingWolf/wd-swinv2-tagger-v3"
 try:
-    open_clip.create_model_and_transforms(f"hf-hub:{repo}")
+    model = hf_hub_download(repo, "model.onnx")
+    InferenceSession(model, providers=["CPUExecutionProvider"])
+    hf_hub_download(repo, "selected_tags.csv")
 except Exception as exc:
     sys.stderr.write(f"Failed to download tagger model: {exc}\n")
     sys.exit(1)

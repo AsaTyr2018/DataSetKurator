@@ -21,8 +21,7 @@ def _load_tagger(device: torch.device) -> tuple[torch.nn.Module, Any, List[str]]
 
     log_step("Downloading tagger weights")
     model, _, preprocess = open_clip.create_model_and_transforms(
-        "swinv2_base_patch4_window8_256",
-        pretrained=f"hf-hub:{_REPO}",
+        f"hf-hub:{_REPO}",
         device=device,
     )
     model.eval()

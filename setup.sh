@@ -19,12 +19,28 @@ create_venv() {
   "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/requirements.txt"
 }
 
+# Verify that required ML models can be loaded before enabling the service.
+check_models() {
+  "$APP_DIR/venv/bin/python" - <<'PY'
+import sys
+import open_clip
+
+repo = "SmilingWolf/wd-v1-4-swinv2-tagger-v3"
+try:
+    open_clip.create_model_and_transforms(f"hf-hub:{repo}")
+except Exception as exc:
+    sys.stderr.write(f"Failed to download tagger model: {exc}\n")
+    sys.exit(1)
+PY
+}
+
 install_app() {
   check_deps
   mkdir -p "$APP_DIR"
   # copy the entire repository including the .git folder so updates work via git
   rsync -a --delete "$(dirname "$0")/" "$APP_DIR/"
   create_venv
+  check_models
 
   cat > "$SERVICE_FILE" <<SERVICE
 [Unit]
@@ -70,6 +86,7 @@ update_app() {
     rsync -a --delete "$(dirname "$0")/" "$APP_DIR/"
   fi
   create_venv
+  check_models
   systemctl restart datasetkurator.service
   echo "DataSetKurator updated"
 }

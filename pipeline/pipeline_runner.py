@@ -28,7 +28,7 @@ class Pipeline:
     def _detect_yolo_model(self) -> Path | None:
         """Return a YOLOv8 weight file from ``models/`` if present."""
         MODELS_DIR.mkdir(exist_ok=True)
-        patterns = ["*yolo*.pt", "*yolo*.pth"]
+        patterns = ["*.pt", "*.pth"]
         for pattern in patterns:
             models = sorted(MODELS_DIR.glob(pattern))
             if models:

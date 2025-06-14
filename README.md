@@ -8,6 +8,11 @@ A minimal pipeline to convert an uploaded video into a basic dataset. Steps are 
    ```bash
    pip install flask
    ```
+   Ensure `ffmpeg` is installed and available in your `PATH`.
+   On Debian-based systems:
+   ```bash
+   sudo apt-get install ffmpeg
+   ```
 2. Run the web app
    ```bash
    python app.py

@@ -20,7 +20,7 @@ class Pipeline:
         try:
             self.output_dir.mkdir(parents=True, exist_ok=True)
             work_frames = self.work_dir / 'frames'
-            frames = frame_extraction.run(video_path, work_frames)
+            frames = frame_extraction.run(video_path, work_frames, fps=1)
 
             work_dedup = self.work_dir / 'dedup'
             deduped = deduplication.run(frames, work_dedup)

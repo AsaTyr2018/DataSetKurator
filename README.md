@@ -6,7 +6,7 @@ A minimal pipeline to convert an uploaded video into a basic dataset. Steps are 
 
 1. Install dependencies
    ```bash
-   pip install flask pillow imagehash
+   pip install flask pillow imagehash torch open_clip_torch scikit-learn
    ```
    Ensure `ffmpeg` is installed and available in your `PATH`.
    On Debian-based systems:
@@ -23,3 +23,5 @@ Upload a video, start the pipeline and download the resulting zip file.
 
 The second stage of the pipeline removes near-duplicate frames using
 perceptual hashing so that only unique images are kept for classification.
+The third stage uses an anime-focused CLIP model and DBSCAN clustering to
+automatically group frames by character.

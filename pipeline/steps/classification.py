@@ -14,12 +14,20 @@ from ..logging_utils import log_step
 
 
 def _load_model(device: torch.device) -> tuple[torch.nn.Module, Any]:
-    """Load an anime-focused CLIP model from the Hugging Face Hub."""
-    model, _, preprocess = open_clip.create_model_and_transforms(
-        "ViT-B-16",
-        pretrained="hf-hub:dudcjs2779/anime-style-tag-clip",
-        device=device,
-    )
+    """Load an anime-focused CLIP model with fallback to the OpenAI weights."""
+    try:
+        model, _, preprocess = open_clip.create_model_and_transforms(
+            "ViT-B-16",
+            pretrained="hf-hub:dudcjs2779/anime-style-tag-clip",
+            device=device,
+        )
+    except Exception as exc:  # pragma: no cover - external download may fail
+        log_step(f"Custom weights unavailable: {exc}; falling back to 'openai'")
+        model, _, preprocess = open_clip.create_model_and_transforms(
+            "ViT-B-16",
+            pretrained="openai",
+            device=device,
+        )
     model.eval()
     return model, preprocess
 

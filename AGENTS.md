@@ -6,14 +6,10 @@
     A Anime-Film Video  --> B Frame Extraction 
     B --> C Frame Deduplication 
     C --> D Charakter-Klassifizierung 
-    D --> E Charakter-Filterung 
-    E --> F Upscaling + Quality Check 
-    F --> G Cropping + Face Detection 
-    G --> H Image Annotation / Tagging 
-    H --> I Final Dataset Images + Captions 
-
-
-
+    D --> E Upscaling + Quality Check 
+    E --> F Cropping + Face Detection
+    F --> G Image Annotation / Tagging
+    G --> H Final Dataset Images + Caption
 
 1.  Frame Extraction
 
@@ -56,20 +52,7 @@ Methode:
 
 
 
-4.  Charakter-Filterung
-
-Ziel: Nur Frames mit dem gewünschten Charakter für das konkrete Dataset behalten
-
-Methode:
-
- Auswahl nach Emotion, Outfit, Kontext etc.
- Kombinierbar mit Active Learning z. B. Feedback-Schleifen mit Klassifikator
-
- Alternative: Shots mit Fokus auf Mimik, typische Posen, Kleidung oder Transformation
-
-
-
-5.  Upscaling & Quality Check
+4.  Upscaling & Quality Check
 
 Ziel: Bilder visuell verbessern
 Tools: `Real-ESRGAN`, `Topaz`, eigene ESRGAN-Modelle
@@ -79,7 +62,7 @@ Tools: `Real-ESRGAN`, `Topaz`, eigene ESRGAN-Modelle
 
 
 
-6.  Cropping & Face Detection
+5.  Cropping & Face Detection
 
 Ziel: Fokus auf Gesicht, Oberkörper oder typische Charakter-Darstellung
 Tools: `YOLOv5`, `mediapipe`, `animeface`, `Sefid`, eigenes Cropping-Skript
@@ -89,7 +72,7 @@ Tools: `YOLOv5`, `mediapipe`, `animeface`, `Sefid`, eigenes Cropping-Skript
 
 
 
-7.  Image Annotation / Tagging
+6.  Image Annotation / Tagging
 
 Ziel: Caption-Dateien erstellen für das Training
 Tools:
@@ -106,7 +89,7 @@ Beispiel-Caption Textdatei pro Bild:
 
 
 
-8.  Finales Dataset
+7.  Finales Dataset
 
 Struktur:
 

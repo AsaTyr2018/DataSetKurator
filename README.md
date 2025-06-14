@@ -49,3 +49,5 @@ python app.py
 ```
 
 Open [http://localhost:8000](http://localhost:8000) to upload a video and start the pipeline.
+You can optionally set a *trigger word* before starting. This word will be
+prepended as the first tag in every generated caption.

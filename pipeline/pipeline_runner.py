@@ -16,7 +16,16 @@ class Pipeline:
         if self.work_dir.exists():
             shutil.rmtree(self.work_dir)
 
-    def run(self, video_path: Path):
+    def run(self, video_path: Path, *, trigger_word: str = "name"):
+        """Execute the full pipeline on ``video_path``.
+
+        Parameters
+        ----------
+        video_path:
+            Input video file to process.
+        trigger_word:
+            Tag to prepend to every caption. Defaults to ``"name"``.
+        """
         try:
             self.output_dir.mkdir(parents=True, exist_ok=True)
             work_frames = self.work_dir / 'frames'
@@ -47,7 +56,7 @@ class Pipeline:
             images_dir.mkdir(exist_ok=True)
             for img in sorted(cropped.glob('*.png')):
                 shutil.copy(img, images_dir / img.name)
-            annotation.run(cropped, captions_dir)
+            annotation.run(cropped, captions_dir, trigger_word=trigger_word)
             shutil.rmtree(work_crop)
 
             # Zip output

@@ -42,6 +42,7 @@ template = """
     <button id=\"upload-btn\">Upload</button>
   </div>
   <div id=\"start-section\" style=\"display:none;\">
+    <input type=text id=\"trigger-word\" placeholder=\"Trigger word\" value=\"name\">
     <button id=\"start-btn\">Start Pipeline</button>
   </div>
   <div id=\"status\">Status: Idle</div>
@@ -83,7 +84,12 @@ template = """
   };
 
   document.getElementById('start-btn').onclick = async () => {
-    await fetch('/start', {method:'POST'});
+    const tw = document.getElementById('trigger-word').value || 'name';
+    await fetch('/start', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({trigger_word: tw})
+    });
   };
   </script>
 </body>
@@ -116,6 +122,9 @@ def start():
         return jsonify({'message': 'No videos found in input'}), 400
     video = videos[0]
 
+    data = request.get_json(silent=True) or {}
+    trigger_word = data.get('trigger_word', 'name')
+
     status = 'Processing'
     zip_result = None
 
@@ -123,7 +132,7 @@ def start():
         global status, zip_result
         pipeline = Pipeline(INPUT_DIR, OUTPUT_DIR, WORK_DIR)
         try:
-            zip_result = pipeline.run(video)
+            zip_result = pipeline.run(video, trigger_word=trigger_word)
             status = 'Completed'
         except Exception:
             status = 'Failed'

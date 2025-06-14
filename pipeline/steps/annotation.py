@@ -85,8 +85,18 @@ def _tag_image(
     return ", ".join(selected)
 
 
-def run(cropped_dir: Path, captions_dir: Path) -> None:
-    """Run image annotation with automatic tagging and fallback."""
+def run(cropped_dir: Path, captions_dir: Path, *, trigger_word: str = "name") -> None:
+    """Run image annotation with automatic tagging and fallback.
+
+    Parameters
+    ----------
+    cropped_dir:
+        Directory containing the cropped images to tag.
+    captions_dir:
+        Output directory for generated caption files.
+    trigger_word:
+        The first tag to prepend to every caption. Defaults to ``"name"``.
+    """
 
     captions_dir.mkdir(parents=True, exist_ok=True)
     log_step("Annotation started")
@@ -98,12 +108,16 @@ def run(cropped_dir: Path, captions_dir: Path) -> None:
         log_step(f"Tagger unavailable: {exc}; using fallback captions")
         for img in sorted(cropped_dir.glob("*.png")):
             caption_file = captions_dir / f"{img.stem}.txt"
-            caption_file.write_text("anime_style")
+            caption_file.write_text(f"{trigger_word}, anime_style")
         log_step("Annotation completed with fallback")
         return
 
     for img in sorted(cropped_dir.glob("*.png")):
         caption = _tag_image(session, img_size, img, tags)
+        if caption:
+            caption = f"{trigger_word}, {caption}"
+        else:
+            caption = trigger_word
         caption_file = captions_dir / f"{img.stem}.txt"
         caption_file.write_text(caption)
 

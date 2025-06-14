@@ -10,3 +10,4 @@ huggingface-hub
 realesrgan
 opencv-python
 onnxruntime
+ultralytics

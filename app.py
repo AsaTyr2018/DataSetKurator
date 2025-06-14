@@ -7,7 +7,7 @@ from flask import (
 )
 from pathlib import Path
 import shutil
-from threading import Thread
+from threading import Thread, Timer
 
 from pipeline.pipeline_runner import Pipeline
 from pipeline.logging_utils import LOG_FILE
@@ -20,6 +20,21 @@ app = Flask(__name__)
 
 status = "Idle"
 zip_result: Path | None = None
+
+
+def schedule_zip_cleanup(path: Path, delay: int = 300) -> None:
+    """Remove ``path`` after ``delay`` seconds."""
+
+    def _delete() -> None:
+        global zip_result
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+        if zip_result == path:
+            zip_result = None
+
+    Timer(delay, _delete).start()
 
 template = """
 <!doctype html>
@@ -130,9 +145,12 @@ def start():
 
     def run():
         global status, zip_result
-        pipeline = Pipeline(INPUT_DIR, OUTPUT_DIR, WORK_DIR)
+        out_dir = OUTPUT_DIR / trigger_word
+        work_dir = WORK_DIR / trigger_word
+        pipeline = Pipeline(INPUT_DIR, out_dir, work_dir)
         try:
             zip_result = pipeline.run(video, trigger_word=trigger_word)
+            schedule_zip_cleanup(Path(zip_result))
             status = 'Completed'
         except Exception:
             status = 'Failed'

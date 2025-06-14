@@ -27,6 +27,13 @@ class Pipeline:
             Tag to prepend to every caption. Defaults to ``"name"``.
         """
         try:
+            if self.output_dir.exists():
+                shutil.rmtree(self.output_dir)
+            zip_path = self.output_dir.with_suffix('.zip')
+            if zip_path.exists():
+                zip_path.unlink()
+            if self.work_dir.exists():
+                shutil.rmtree(self.work_dir)
             self.output_dir.mkdir(parents=True, exist_ok=True)
             work_frames = self.work_dir / 'frames'
             frames = frame_extraction.run(video_path, work_frames, fps=1)
@@ -64,6 +71,7 @@ class Pipeline:
             with zipfile.ZipFile(zip_path, 'w') as zf:
                 for path in self.output_dir.rglob('*'):
                     zf.write(path, path.relative_to(self.output_dir))
+            shutil.rmtree(self.output_dir)
             log_step(f'Pipeline completed successfully: {zip_path}')
             return zip_path
         except Exception as e:

@@ -20,6 +20,7 @@ WORK_DIR = Path('work')
 app = Flask(__name__)
 
 status = "Idle"
+progress = {"step": 0, "total": 8, "name": "Idle"}
 zip_result: Path | None = None
 
 
@@ -52,6 +53,13 @@ def schedule_zip_cleanup(path: Path, delay: int = 300) -> None:
 
     Timer(delay, _delete).start()
 
+
+def update_progress(step: int, name: str) -> None:
+    """Update global progress indicator."""
+    global progress
+    progress["step"] = step
+    progress["name"] = name
+
 template = """
 <!doctype html>
 <html lang=\"en\">
@@ -77,6 +85,7 @@ template = """
     <button id=\"start-btn\">Start Pipeline</button>
   </div>
   <div id=\"status\">Status: Idle</div>
+  <div id=\"progress\" style=\"margin-top:10px;\"></div>
   <div id=\"download\" style=\"display:none;\">
     <a id=\"download-link\" href=#>Download Result</a>
   </div>
@@ -86,6 +95,12 @@ template = """
     if(!r.ok)return;
     const d = await r.json();
     document.getElementById('status').textContent = 'Status: '+d.status;
+    const prog = document.getElementById('progress');
+    if(d.progress && d.progress.step){
+      prog.textContent = 'Step '+d.progress.step+' / '+d.progress.total+': '+d.progress.name;
+    }else{
+      prog.textContent = '';
+    }
     const dl = document.getElementById('download');
     const link = document.getElementById('download-link');
     if(d.status==='Completed'){
@@ -146,7 +161,7 @@ def upload():
 
 @app.route('/start', methods=['POST'])
 def start():
-    global status, zip_result
+    global status, zip_result, progress
     if status == 'Processing':
         return jsonify({'message': 'Pipeline already running'}), 400
     videos = list(INPUT_DIR.glob('*'))
@@ -158,18 +173,22 @@ def start():
     trigger_word = data.get('trigger_word', 'name')
 
     status = 'Processing'
+    progress = {"step": 0, "total": 8, "name": "Queued"}
+    update_progress(0, 'Queued')
     zip_result = None
 
     def run():
-        global status, zip_result
+        global status, zip_result, progress
         out_dir = OUTPUT_DIR / trigger_word
         work_dir = WORK_DIR / trigger_word
         pipeline = Pipeline(INPUT_DIR, out_dir, work_dir)
         try:
-            zip_result = pipeline.run(video, trigger_word=trigger_word)
+            zip_result = pipeline.run(video, trigger_word=trigger_word, progress_cb=update_progress)
             schedule_zip_cleanup(Path(zip_result))
+            update_progress(progress['total'], 'Done')
             status = 'Completed'
         except Exception:
+            update_progress(progress['total'], 'Failed')
             status = 'Failed'
         finally:
             for f in INPUT_DIR.glob('*'):
@@ -180,7 +199,7 @@ def start():
 
 @app.route('/status')
 def get_status():
-    return jsonify({'status': status})
+    return jsonify({'status': status, 'progress': progress})
 
 @app.route('/download')
 def download():

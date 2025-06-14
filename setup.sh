@@ -25,11 +25,18 @@ check_models() {
 import sys
 import open_clip
 
-repo = "SmilingWolf/wd-v1-4-swinv2-tagger-v3"
+model = "swinv2_base_patch4_window8_256"
+if model not in open_clip.list_models():
+    sys.stderr.write(f"Required model '{model}' not available in open_clip\n")
+    sys.exit(1)
+
 try:
-    open_clip.create_model_and_transforms(f"hf-hub:{repo}")
+    open_clip.create_model_and_transforms(
+        model,
+        pretrained="hf-hub:SmilingWolf/wd-v1-4-swinv2-tagger-v3",
+    )
 except Exception as exc:
-    sys.stderr.write(f"Failed to download tagger model: {exc}\n")
+    sys.stderr.write(f"Failed to load tagger weights: {exc}\n")
     sys.exit(1)
 PY
 }

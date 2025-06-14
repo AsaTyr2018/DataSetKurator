@@ -5,6 +5,7 @@ from flask import (
     send_file,
     jsonify,
 )
+import subprocess
 from pathlib import Path
 import shutil
 from threading import Thread, Timer
@@ -20,6 +21,21 @@ app = Flask(__name__)
 
 status = "Idle"
 zip_result: Path | None = None
+
+
+def get_commit_id() -> str:
+    """Return the short git commit hash for the current repo."""
+    try:
+        return (
+            subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
+            .decode()
+            .strip()
+        )
+    except Exception:
+        return "unknown"
+
+
+COMMIT_ID = get_commit_id()
 
 
 def schedule_zip_cleanup(path: Path, delay: int = 300) -> None:
@@ -107,13 +123,14 @@ template = """
     });
   };
   </script>
+  <footer style="margin-top:40px;font-size:0.8em;">Version: {{ commit_id }}</footer>
 </body>
 </html>
 """
 
 @app.route('/')
 def index():
-    return render_template_string(template)
+    return render_template_string(template, commit_id=COMMIT_ID)
 
 @app.route('/upload', methods=['POST'])
 def upload():

@@ -12,7 +12,7 @@ from huggingface_hub import hf_hub_download
 from ..logging_utils import log_step
 
 
-_REPO = "SmilingWolf/wd-v1-4-swinv2-tagger-v3"
+_REPO = "SmilingWolf/wd-swinv2-tagger-v3"
 _TAGS_FILE = "selected_tags.csv"
 
 

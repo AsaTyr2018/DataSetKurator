@@ -85,7 +85,13 @@ def _tag_image(
     return ", ".join(selected)
 
 
-def run(cropped_dir: Path, captions_dir: Path, *, trigger_word: str = "name") -> None:
+def run(
+    cropped_dir: Path,
+    captions_dir: Path,
+    *,
+    trigger_word: str = "name",
+    preloaded: tuple[InferenceSession, int, List[str]] | None = None,
+) -> None:
     """Run image annotation with automatic tagging and fallback.
 
     Parameters
@@ -103,7 +109,10 @@ def run(cropped_dir: Path, captions_dir: Path, *, trigger_word: str = "name") ->
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
-        session, img_size, tags = _load_tagger(device)
+        if preloaded is not None:
+            session, img_size, tags = preloaded
+        else:
+            session, img_size, tags = _load_tagger(device)
     except Exception as exc:  # pragma: no cover - download may fail
         log_step(f"Tagger unavailable: {exc}; using fallback captions")
         for img in sorted(cropped_dir.glob("*.png")):

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import List
+from onnxruntime import InferenceSession
 import shutil
 
 import torch
@@ -111,7 +112,12 @@ def _cluster_unknowns(unclassified_dir: Path, *, n_clusters: int = 5) -> None:
         shutil.move(img_path, cluster_dir / img_path.name)
 
 
-def run(images_dir: Path, workdir: Path) -> Path:
+def run(
+    images_dir: Path,
+    workdir: Path,
+    *,
+    preloaded: tuple[InferenceSession, int, List[str]] | None = None,
+) -> Path:
     """Group images into folders based on detected hair, eye and style tags."""
 
     workdir.mkdir(parents=True, exist_ok=True)
@@ -119,7 +125,10 @@ def run(images_dir: Path, workdir: Path) -> Path:
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
-        session, img_size, tags = _load_tagger(device)
+        if preloaded is not None:
+            session, img_size, tags = preloaded
+        else:
+            session, img_size, tags = _load_tagger(device)
     except Exception as exc:  # pragma: no cover - download may fail
         log_step(f"Tagger unavailable: {exc}; putting all images in 'unclassified'")
         for img in sorted(images_dir.glob("*.png")):

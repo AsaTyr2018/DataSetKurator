@@ -78,6 +78,7 @@ def run(
     *,
     margin: float = 0.3,
     yolo_model: Path | None = None,
+    yolo: YOLO | None = None,
     conf_threshold: float = 0.5,
     batch_size: int = 4,
     use_mediapipe: bool | None = None,
@@ -102,7 +103,11 @@ def run(
     workdir.mkdir(parents=True, exist_ok=True)
 
     detector = None
-    if yolo_model is not None:
+    if yolo is not None:
+        model = yolo
+        method = "yolo"
+        log_step("Cropping started with YOLOv8 (preloaded)")
+    elif yolo_model is not None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         model = YOLO(str(yolo_model)).to(device)
         method = "yolo"

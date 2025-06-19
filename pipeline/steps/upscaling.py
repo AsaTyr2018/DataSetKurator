@@ -93,14 +93,18 @@ def run(
     scale: int = 4,
     blur_threshold: float = 100.0,
     dark_threshold: float = 40.0,
+    model: object | None = None,
+    device: torch.device | None = None,
 ) -> Path:
     """Upscale images with RealESRGAN and drop low-quality frames."""
 
     workdir.mkdir(parents=True, exist_ok=True)
     log_step("Upscaling started")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = _load_model(device, scale)
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if model is None:
+        model = _load_model(device, scale)
 
     images = sorted(filtered_dir.glob("*.png"))
     total = len(images)

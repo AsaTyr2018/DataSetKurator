@@ -1,12 +1,27 @@
 from pathlib import Path
+import os
 import shutil
 import zipfile
 from typing import Callable
+import torch
 
 from .logging_utils import log_step
-from .steps import frame_extraction, deduplication, classification, filtering, upscaling, cropping, annotation
-
-MODELS_DIR = Path("models")
+from .steps import (
+    frame_extraction,
+    deduplication,
+    classification,
+    filtering,
+    upscaling,
+    cropping,
+    annotation,
+)
+from .preloader import (
+    detect_yolo_model,
+    preload_yolo,
+    preload_tagger,
+    preload_realesrgan,
+    get as get_model,
+)
 
 
 class Pipeline:
@@ -17,6 +32,7 @@ class Pipeline:
         work_dir: Path,
         *,
         yolo_model: Path | None = None,
+        preload: bool | None = None,
     ) -> None:
         self.input_dir = input_dir
         self.output_dir = output_dir
@@ -24,19 +40,10 @@ class Pipeline:
         if yolo_model is not None:
             self.yolo_model = yolo_model
         else:
-            self.yolo_model = self._detect_yolo_model()
+            self.yolo_model = detect_yolo_model()
 
-    def _detect_yolo_model(self) -> Path | None:
-        """Return a YOLOv8 weight file from ``models/`` if present."""
-        MODELS_DIR.mkdir(exist_ok=True)
-        patterns = ["*.pt", "*.pth"]
-        for pattern in patterns:
-            models = sorted(MODELS_DIR.glob(pattern))
-            if models:
-                log_step(f"Found YOLO model: {models[0]}")
-                return models[0]
-        log_step("No YOLO model found")
-        return None
+        env_preload = os.getenv("DSK_PRELOAD", "1")
+        self.preload = preload if preload is not None else env_preload != "0"
 
     def cleanup(self):
         if self.work_dir.exists():
@@ -59,6 +66,12 @@ class Pipeline:
             Tag to prepend to every caption. Defaults to ``"name"``.
         """
         try:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            if self.preload:
+                preload_realesrgan(device, 4)
+                preload_yolo(self.yolo_model)
+                preload_tagger(device)
+
             if progress_cb:
                 progress_cb(0, 'Starting')
             if self.output_dir.exists():
@@ -89,7 +102,12 @@ class Pipeline:
             work_upscale = self.work_dir / 'upscaling'
             if progress_cb:
                 progress_cb(4, 'Upscaling')
-            upscaled = upscaling.run(filtered, work_upscale)
+            upscaled = upscaling.run(
+                filtered,
+                work_upscale,
+                model=get_model("realesrgan") if self.preload else None,
+                device=device,
+            )
             shutil.rmtree(work_filter)
 
             work_crop = self.work_dir / 'cropping'
@@ -99,18 +117,28 @@ class Pipeline:
                 upscaled,
                 work_crop,
                 yolo_model=self.yolo_model,
+                yolo=get_model("yolo") if self.preload else None,
             )
             shutil.rmtree(work_upscale)
 
             captions_dir = self.output_dir / 'captions'
             if progress_cb:
                 progress_cb(6, 'Annotation')
-            annotation.run(cropped, captions_dir, trigger_word=trigger_word)
+            annotation.run(
+                cropped,
+                captions_dir,
+                trigger_word=trigger_word,
+                preloaded=get_model("tagger") if self.preload else None,
+            )
 
             work_class = self.work_dir / 'classification'
             if progress_cb:
                 progress_cb(7, 'Classification')
-            classified = classification.run(cropped, work_class)
+            classified = classification.run(
+                cropped,
+                work_class,
+                preloaded=get_model("tagger") if self.preload else None,
+            )
             images_dir = self.output_dir / 'images'
             shutil.copytree(classified, images_dir)
             shutil.rmtree(work_class)

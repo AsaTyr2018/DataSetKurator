@@ -72,6 +72,14 @@ If RealESRGAN cannot be used you may try alternative models such as
 ``realesr-general-x4v3.pth`` or the smaller ``realesr-animevideov3``. External
 tools like Waifu2x or Real‑CUGAN are also viable substitutes.
 
+## Model Preloading
+
+The pipeline preloads the YOLOv8 detector, WD14 tagger and RealESRGAN weights in
+background threads so that heavy models are ready once their step is reached.
+This speeds up processing but keeps the weights in GPU memory. On GPUs with
+limited RAM you can disable preloading by setting the environment variable
+``DSK_PRELOAD=0`` or by instantiating ``Pipeline`` with ``preload=False``.
+
 If these projects help you, consider starring
 [SoulflareRC/AniRef-yolov8](https://github.com/SoulflareRC/AniRef-yolov8) and
 [xinntao/Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) as a small thank

@@ -28,6 +28,51 @@ results: list[str] = []
 REPO_ROOT = Path(__file__).resolve().parent
 
 
+def get_version_from_changelog(commit_id: str) -> str:
+    """Return the version string for the given commit ID from changelog.md.
+
+    If no matching entry is found, the closest ancestor commit listed in the
+    changelog is used. Returns ``"Unknown"`` if the file is missing or no entry
+    matches.
+    """
+    changelog = REPO_ROOT / "changelog.md"
+    if not changelog.exists():
+        return "Unknown"
+
+    entries: list[tuple[str, str]] = []
+    current_version = "Unknown"
+    for line in changelog.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("## "):
+            current_version = line[3:].strip()
+        elif line.startswith("-") and "(" in line and ")" in line:
+            cid = line[line.rfind("(") + 1 : line.rfind(")")].strip()
+            if cid:
+                entries.append((cid, current_version))
+
+    # Iterate entries in order and return the first commit that is an ancestor
+    for cid, version in entries:
+        try:
+            subprocess.check_call(
+                [
+                    "git",
+                    "-C",
+                    str(REPO_ROOT),
+                    "merge-base",
+                    "--is-ancestor",
+                    cid,
+                    "HEAD",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return version
+        except subprocess.CalledProcessError:
+            continue
+
+    return "Unknown"
+
+
 def get_commit_id() -> str:
     """Return the short git commit hash for the repository.
 
@@ -46,6 +91,7 @@ def get_commit_id() -> str:
 
 
 COMMIT_ID = get_commit_id()
+VERSION = get_version_from_changelog(COMMIT_ID)
 
 
 def update_progress(step: int, name: str) -> None:
@@ -106,7 +152,7 @@ template = """
   <footer>
     <div>One tool to Rule them all</div>
     <div>Presented by AsaTyr</div>
-    <div>Version: {{ commit_id }}</div>
+    <div>Version: {{ version }} ({{ commit_id }})</div>
   </footer>
   <script>
     const dropZone = document.getElementById('drop-zone');
@@ -209,7 +255,9 @@ template = """
 
 @app.route('/')
 def index():
-    return render_template_string(template, commit_id=COMMIT_ID)
+    return render_template_string(
+        template, commit_id=COMMIT_ID, version=VERSION
+    )
 
 @app.route('/upload', methods=['POST'])
 def upload():

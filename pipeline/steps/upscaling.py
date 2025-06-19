@@ -38,17 +38,31 @@ def _load_model(device: torch.device, scale: int) -> Optional[object]:
         return None
     try:
         url = (
-
             "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/"
             "RealESRGAN_x4plus_anime_6B.pth"
         )
-        # ``RealESRGANer`` automatically downloads weights when given a URL
-        model = RealESRGAN(
-            scale=scale,
-            model_path=url,
-            device=device,
-            half=False,
-        )
+        if RealESRGAN.__name__ == "RealESRGANer":  # modernes API
+            from realesrgan.archs.srvgg_arch import SRVGGNetCompact
+
+            arch = SRVGGNetCompact(
+                num_in_ch=3,
+                num_out_ch=3,
+                num_feat=64,
+                num_conv=16,
+                upscale=scale,
+                act_type="prelu",
+            )
+            # ``RealESRGANer`` lädt die Gewichte automatisch
+            model = RealESRGAN(
+                scale=scale,
+                model_path=url,
+                model=arch,
+                device=device,
+                half=False,
+            )
+        else:  # ältere API
+            model = RealESRGAN(device, scale=scale)
+            model.load_weights(url)
         return model
     except Exception as exc:  # pragma: no cover - runtime download may fail
         log_step(f"RealESRGAN load failed: {exc}; falling back to PIL resize")

@@ -74,7 +74,7 @@ template = """
     #progress-bar .bar{height:100%;width:0;background:#4ea3ff;}
     #status{font-weight:bold;margin-top:10px;}
     a{color:#4ea3ff;}
-    pre{background:#000;color:#0f0;padding:10px;height:200px;overflow:auto;margin-top:10px;flex:1;}
+    pre{background:#000;color:#0f0;padding:10px;height:200px;overflow:auto;margin-top:10px;flex:1;white-space:pre-wrap;word-break:break-word;}
     footer{background:#1e1e1e;padding:10px;text-align:center;font-size:0.9em;}
   </style>
 </head>
@@ -85,6 +85,10 @@ template = """
   <div id=\"content\">
     <div class=\"box\">
       <h2>Job Queue</h2>
+      <div id=\"drop-zone\">Click or Drop video to upload</div>
+      <input type=\"file\" id=\"video-file\" style=\"display:none;\" multiple>
+      <div id=\"progress-bar\"><div class=\"bar\"></div></div>
+      <button id=\"start-btn\" style=\"display:none;\">Start Batch</button>
       <ul id=\"queue-list\"></ul>
     </div>
     <div class=\"box\">
@@ -93,10 +97,6 @@ template = """
       <div id=\"progress\"></div>
       <a id=\"log-download\" href=\"/log\" target=\"_blank\">Download Log</a>
       <pre id=\"log-content\"></pre>
-      <div id=\"drop-zone\">Click or Drop video to upload</div>
-      <input type=\"file\" id=\"video-file\" style=\"display:none;\" multiple>
-      <div id=\"progress-bar\"><div class=\"bar\"></div></div>
-      <button id=\"start-btn\" style=\"display:none;\">Start Batch</button>
     </div>
     <div class=\"box\">
       <h2>Finished Jobs</h2>
@@ -150,8 +150,9 @@ template = """
       const r = await fetch('/log');
       if(r.ok){
         const text = await r.text();
-        logBox.textContent = text;
-        logBox.scrollTop = logBox.scrollHeight;
+        const lines = text.trim().split('\n').reverse();
+        logBox.textContent = lines.join('\n');
+        logBox.scrollTop = 0;
       }
     }
 

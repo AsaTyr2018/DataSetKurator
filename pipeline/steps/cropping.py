@@ -13,7 +13,7 @@ try:  # Optional dependency for better face detection
 except Exception:  # pragma: no cover - library may be missing
     mp = None  # type: ignore
 
-from ..logging_utils import log_step
+from ..logging_utils import log_step, log_progress
 
 
 def _crop_box(img: Image.Image, x: int, y: int, w: int, h: int, margin: float) -> Image.Image:
@@ -118,6 +118,8 @@ def run(
         log_step("Cropping started with animeface")
 
     img_paths = sorted(upscaled_dir.glob("*.png"))
+    total = len(img_paths)
+    processed = 0
 
     if method == "yolo":
         for i in range(0, len(img_paths), batch_size):
@@ -132,6 +134,8 @@ def run(
                         out_name = f"{p.stem}_{idx:02d}.png" if len(crops) > 1 else p.name
                         cropped.save(workdir / out_name)
                 img.close()
+                processed += 1
+                log_progress("Cropping", processed, total)
     else:
         for p in img_paths:
             with Image.open(p).convert("RGB") as img:
@@ -146,7 +150,8 @@ def run(
                 for idx, cropped in enumerate(crops):
                     out_name = f"{p.stem}_{idx:02d}.png" if len(crops) > 1 else p.name
                     cropped.save(workdir / out_name)
-
+            processed += 1
+            log_progress("Cropping", processed, total)
     if detector is not None:
         detector.close()
 

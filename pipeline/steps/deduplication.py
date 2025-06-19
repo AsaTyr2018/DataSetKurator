@@ -7,7 +7,7 @@ from typing import List
 from PIL import Image
 import imagehash
 
-from ..logging_utils import log_step
+from ..logging_utils import log_step, log_progress
 
 
 def run(frames_dir: Path, workdir: Path, threshold: int = 8) -> Path:
@@ -28,13 +28,16 @@ def run(frames_dir: Path, workdir: Path, threshold: int = 8) -> Path:
     log_step("Deduplication started")
 
     hashes: List[imagehash.ImageHash] = []
-    for frame in sorted(frames_dir.glob("*.png")):
+    frames = sorted(frames_dir.glob("*.png"))
+    total = len(frames)
+    for idx, frame in enumerate(frames, 1):
         with Image.open(frame) as img:
             phash = imagehash.phash(img)
 
         if all(phash - h > threshold for h in hashes):
             hashes.append(phash)
             shutil.copy(frame, workdir / frame.name)
+        log_progress("Deduplication", idx, total)
 
     log_step("Deduplication completed")
     return workdir

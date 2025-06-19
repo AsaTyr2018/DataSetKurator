@@ -12,3 +12,4 @@ ultralytics
 open_clip_torch
 umap-learn
 scikit-learn
+mediapipe

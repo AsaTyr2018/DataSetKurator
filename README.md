@@ -8,7 +8,7 @@ DataSetKurator turns an anime film into a dataset ready for LoRA training. Every
 2. **Deduplication** – perceptual hashing drops duplicates
 3. **Filtering** – remove unwanted shots
 4. **Upscaling & Quality Check** – RealESRGAN or PIL resize with blur/dark checks
-5. **Cropping** – faces cut out using `animeface` or a YOLOv8 model automatically detected in `models/`
+5. **Cropping** – faces cut out using a YOLOv8 model if present, otherwise `mediapipe` or `animeface` as fallbacks. YOLO models are automatically detected in `models/` and processed in batches for speed.
 6. **Annotation** – WD14 tagger generates captions
 7. **Character Classification** – images grouped by detected hair and eye color
    with optional style hints like hair length and glasses (`<hair>_<eyes>[_length][ _accessory]`).
@@ -53,6 +53,7 @@ You can optionally set a *trigger word* before starting. This word will be
 prepended as the first tag in every generated caption.
 Place any YOLOv8 ``.pt`` file inside the new ``models/`` folder. The pipeline
 indexes this directory on startup and automatically uses the first matching
-weight file. If no model is found, cropping falls back to ``animeface``.
+weight file. If no model is found, cropping falls back to ``mediapipe`` (if
+installed) or ``animeface``.
 Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
 [AniRef-yolov8 releases](https://github.com/SoulflareRC/AniRef-yolov8/releases).

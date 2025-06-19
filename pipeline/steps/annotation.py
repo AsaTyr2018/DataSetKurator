@@ -33,6 +33,7 @@ def _load_tagger(device: torch.device) -> tuple[InferenceSession, int, List[str]
 
     with open(tags_path, newline="") as csvfile:
         reader = csv.reader(csvfile)
+        next(reader, None)  # skip header row
         tags = [row[1] for row in reader]
 
     input_height = session.get_inputs()[0].shape[2]

@@ -118,12 +118,15 @@ template = """
     dropZone.ondrop = e => {
         e.preventDefault();
         dropZone.classList.remove('hover');
-        if(e.dataTransfer.files.length){
-            fileInput.files = e.dataTransfer.files;
-            uploadFile(e.dataTransfer.files[0]);
+        for (const file of e.dataTransfer.files){
+            uploadFile(file);
         }
     };
-    fileInput.onchange = () => { if(fileInput.files.length) uploadFile(fileInput.files[0]); };
+    fileInput.onchange = () => {
+        for (const file of fileInput.files){
+            uploadFile(file);
+        }
+    };
 
     function uploadFile(file){
         const xhr = new XMLHttpRequest();

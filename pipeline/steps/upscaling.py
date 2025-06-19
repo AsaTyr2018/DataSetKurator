@@ -38,8 +38,9 @@ def _load_model(device: torch.device, scale: int) -> Optional[object]:
         return None
     try:
         url = (
-            f"https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/"
-            f"RealESRGAN_x{scale}plus_anime_6B.pth"
+
+            "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/"
+            "RealESRGAN_x4plus_anime_6B.pth"
         )
         # ``RealESRGANer`` automatically downloads weights when given a URL
         model = RealESRGAN(

@@ -60,11 +60,12 @@ Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
 
 The optional upscaling step relies on the ``realesrgan`` library (v0.3 or
 newer). When run it automatically downloads
-``RealESRGAN_x2plus_anime_6B.pth`` or ``RealESRGAN_x4plus_anime_6B.pth`` from
-the official [Real‑ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/)
-if the file does not already exist next to ``app.py``. Keeping the weights in
-place avoids repeated downloads. Upscaling requires ``torch`` and
-``torchvision`` to be installed.
+
+``RealESRGAN_x4plus_anime_6B.pth`` from the official
+[Real‑ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/) if the
+file does not already exist next to ``app.py``. Keeping the weights in place
+avoids repeated downloads. Upscaling requires ``torch`` and ``torchvision`` to
+be installed.
 
 If RealESRGAN cannot be used you may try alternative models such as
 ``realesr-general-x4v3.pth`` or the smaller ``realesr-animevideov3``. External

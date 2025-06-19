@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from datetime import datetime
 
 LOG_FILE = Path("logs/process.log")
 
@@ -35,3 +36,28 @@ logger.propagate = False
 
 def log_step(step: str) -> None:
     logger.dsk(step)
+
+
+def rotate_log(job_name: str) -> None:
+    """Rename the current log file and start a fresh one.
+
+    Parameters
+    ----------
+    job_name:
+        Name of the job that was processed. This will be used in the
+        rotated log file name together with the current date.
+    """
+    global handler
+    logger.handlers[0].flush()
+    logger.removeHandler(handler)
+    handler.close()
+    date_str = datetime.now().strftime("%Y%m%d-%H%M%S")
+    new_path = LOG_FILE.with_name(f"process-{date_str}-{job_name}.log")
+    if LOG_FILE.exists():
+        LOG_FILE.rename(new_path)
+    # Start a fresh log file
+    LOG_FILE.touch()
+    handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+    handler.setLevel(DSK_LEVEL)
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(handler)

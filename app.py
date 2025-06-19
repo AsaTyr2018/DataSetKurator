@@ -11,7 +11,7 @@ import shutil
 from threading import Thread
 
 from pipeline.pipeline_runner import Pipeline
-from pipeline.logging_utils import LOG_FILE
+from pipeline.logging_utils import LOG_FILE, rotate_log
 
 INPUT_DIR = Path('input')
 OUTPUT_DIR = Path('output')
@@ -239,9 +239,12 @@ def start():
                 out_dir = OUTPUT_DIR / tw
                 work_dir = WORK_DIR / tw
                 pipeline = Pipeline(INPUT_DIR, out_dir, work_dir)
-                zip_result = pipeline.run(video, trigger_word=tw, progress_cb=update_progress)
-                results.append(Path(zip_result).name)
-                video.unlink()
+                try:
+                    zip_result = pipeline.run(video, trigger_word=tw, progress_cb=update_progress)
+                    results.append(Path(zip_result).name)
+                    video.unlink()
+                finally:
+                    rotate_log(tw)
             update_progress(progress['total'], 'Done')
             status = 'Completed'
         except Exception:

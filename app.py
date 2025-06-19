@@ -56,45 +56,62 @@ def update_progress(step: int, name: str) -> None:
 
 template = """
 <!doctype html>
-<html lang="en">
+<html lang=\"en\">
 <head>
-  <meta charset="utf-8">
+  <meta charset=\"utf-8\">
   <title>DataSetKurator</title>
   <style>
-    body{background:#121212;color:#eee;font-family:Arial,sans-serif;margin:0;padding:20px;display:flex;flex-direction:column;align-items:center;}
-    #drop-zone{border:2px dashed #555;padding:40px;width:100%;max-width:400px;text-align:center;margin-bottom:20px;cursor:pointer;}
+    body{background:#121212;color:#eee;font-family:Arial,sans-serif;margin:0;display:flex;flex-direction:column;height:100vh;}
+    header{background:#1e1e1e;padding:20px;text-align:center;box-shadow:0 0 10px #000;}
+    header h1{margin:0;font-size:2em;color:#4ea3ff;text-shadow:0 0 5px #4ea3ff;}
+    #content{flex:1;display:flex;gap:20px;padding:20px;box-sizing:border-box;}
+    .box{background:#1e1e1e;padding:20px;flex:1;border:1px solid #333;display:flex;flex-direction:column;}
+    #drop-zone{border:2px dashed #555;padding:40px;text-align:center;cursor:pointer;margin-top:10px;}
     #drop-zone.hover{border-color:#4ea3ff;}
     input,button{background:#333;color:#eee;border:1px solid #555;padding:8px;}
-    button{cursor:pointer;}
-    #progress-bar{width:100%;background:#333;margin-top:10px;height:20px;display:none;max-width:400px;}
+    button{cursor:pointer;margin-top:10px;}
+    #progress-bar{width:100%;background:#333;margin-top:10px;height:20px;display:none;}
     #progress-bar .bar{height:100%;width:0;background:#4ea3ff;}
-    #status{margin-top:20px;font-weight:bold;}
+    #status{font-weight:bold;margin-top:10px;}
     a{color:#4ea3ff;}
-    #lists{display:flex;width:100%;max-width:800px;gap:40px;margin-top:20px;}
-    #lists div{flex:1;}
+    pre{background:#000;color:#0f0;padding:10px;height:200px;overflow:auto;margin-top:10px;flex:1;}
+    footer{background:#1e1e1e;padding:10px;text-align:center;font-size:0.9em;}
   </style>
 </head>
 <body>
-  <h1>DataSetKurator</h1>
-  <div id="drop-zone">Drop video here or click to select</div>
-  <input type="file" id="video-file" style="display:none;" multiple>
-  <div id="progress-bar"><div class="bar"></div></div>
-  <button id="start-btn" style="display:none;">Start Batch</button>
-  <div id="status">Status: Idle</div>
-  <div id="progress" style="margin-top:10px;"></div>
-  <div id="lists">
-    <div>
-      <h3>Uploaded Videos</h3>
-      <ul id="video-list"></ul>
+  <header>
+    <h1>DataSetKurator</h1>
+  </header>
+  <div id=\"content\">
+    <div class=\"box\">
+      <h2>Job Queue</h2>
+      <ul id=\"queue-list\"></ul>
     </div>
-    <div>
-      <h3>Finished Zips</h3>
-      <ul id="zip-list"></ul>
+    <div class=\"box\">
+      <h2>Current Job</h2>
+      <div id=\"status\">Status: Idle</div>
+      <div id=\"progress\"></div>
+      <a id=\"log-download\" href=\"/log\" target=\"_blank\">Download Log</a>
+      <pre id=\"log-content\"></pre>
+      <div id=\"drop-zone\">Click or Drop video to upload</div>
+      <input type=\"file\" id=\"video-file\" style=\"display:none;\" multiple>
+      <div id=\"progress-bar\"><div class=\"bar\"></div></div>
+      <button id=\"start-btn\" style=\"display:none;\">Start Batch</button>
+    </div>
+    <div class=\"box\">
+      <h2>Finished Jobs</h2>
+      <ul id=\"result-list\"></ul>
     </div>
   </div>
+  <footer>
+    <div>One tool to Rule them all</div>
+    <div>Presented by AsaTyr</div>
+    <div>Version: {{ commit_id }}</div>
+  </footer>
   <script>
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('video-file');
+    const logBox = document.getElementById('log-content');
     dropZone.onclick = () => fileInput.click();
     dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('hover'); };
     dropZone.ondragleave = () => dropZone.classList.remove('hover');
@@ -129,6 +146,15 @@ template = """
         xhr.send(fd);
     }
 
+    async function fetchLog(){
+      const r = await fetch('/log');
+      if(r.ok){
+        const text = await r.text();
+        logBox.textContent = text;
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    }
+
     async function checkStatus(){
       const r = await fetch('/status');
       if(!r.ok)return;
@@ -140,22 +166,22 @@ template = """
       }else{
         prog.textContent = '';
       }
-      const list = document.getElementById('video-list');
+      const list = document.getElementById('queue-list');
       list.innerHTML = '';
       for(const v of d.queue){
         const li = document.createElement('li');
         li.textContent = v;
         list.appendChild(li);
       }
-      const zipList = document.getElementById('zip-list');
-      zipList.innerHTML = '';
+      const resList = document.getElementById('result-list');
+      resList.innerHTML = '';
       for(const z of d.results){
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.textContent = z;
         a.href = '/download/'+encodeURIComponent(z);
         li.appendChild(a);
-        zipList.appendChild(li);
+        resList.appendChild(li);
       }
       const startBtn = document.getElementById('start-btn');
       if(d.queue.length && d.status!=='Processing'){
@@ -164,14 +190,15 @@ template = """
         startBtn.style.display='none';
       }
     }
-    setInterval(checkStatus,2000);
+
+    setInterval(() => {checkStatus(); fetchLog();}, 2000);
     checkStatus();
+    fetchLog();
 
     document.getElementById('start-btn').onclick = async () => {
       await fetch('/start', {method:'POST'});
     };
   </script>
-  <footer style="margin-top:40px;font-size:0.8em;">Version: {{ commit_id }}</footer>
 </body>
 </html>
 """

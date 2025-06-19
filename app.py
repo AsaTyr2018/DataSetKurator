@@ -6,10 +6,9 @@ from flask import (
     jsonify,
 )
 import subprocess
-import time
 from pathlib import Path
 import shutil
-from threading import Thread, Timer
+from threading import Thread
 
 from pipeline.pipeline_runner import Pipeline
 from pipeline.logging_utils import LOG_FILE
@@ -23,7 +22,7 @@ app = Flask(__name__)
 status = "Idle"
 progress = {"step": 0, "total": 8, "name": "Idle"}
 zip_result: Path | None = None
-zip_expire: float | None = None
+results: list[str] = []
 
 
 REPO_ROOT = Path(__file__).resolve().parent
@@ -49,25 +48,6 @@ def get_commit_id() -> str:
 COMMIT_ID = get_commit_id()
 
 
-def schedule_zip_cleanup(path: Path, delay: int = 300) -> None:
-    """Remove ``path`` after ``delay`` seconds and track its expiry."""
-
-    global zip_expire
-    zip_expire = time.time() + delay
-
-    def _delete() -> None:
-        global zip_result, zip_expire
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
-        if zip_result == path:
-            zip_result = None
-        zip_expire = None
-
-    Timer(delay, _delete).start()
-
-
 def update_progress(step: int, name: str) -> None:
     """Update global progress indicator."""
     global progress
@@ -90,23 +70,27 @@ template = """
     #progress-bar .bar{height:100%;width:0;background:#4ea3ff;}
     #status{margin-top:20px;font-weight:bold;}
     a{color:#4ea3ff;}
-    #ttl{margin-top:10px;}
+    #lists{display:flex;width:100%;max-width:800px;gap:40px;margin-top:20px;}
+    #lists div{flex:1;}
   </style>
 </head>
 <body>
   <h1>DataSetKurator</h1>
   <div id="drop-zone">Drop video here or click to select</div>
-  <input type="file" id="video-file" style="display:none;">
+  <input type="file" id="video-file" style="display:none;" multiple>
   <div id="progress-bar"><div class="bar"></div></div>
-  <div id="start-section" style="display:none;">
-    <input type="text" id="trigger-word" placeholder="Trigger word" value="name">
-    <button id="start-btn">Start Pipeline</button>
-  </div>
+  <button id="start-btn" style="display:none;">Start Batch</button>
   <div id="status">Status: Idle</div>
   <div id="progress" style="margin-top:10px;"></div>
-  <div id="download" style="display:none;">
-    <a id="download-link" href="#">Download Result</a>
-    <div id="ttl" style="display:none;">Expires in <span id="ttl-val">0</span>s</div>
+  <div id="lists">
+    <div>
+      <h3>Uploaded Videos</h3>
+      <ul id="video-list"></ul>
+    </div>
+    <div>
+      <h3>Finished Zips</h3>
+      <ul id="zip-list"></ul>
+    </div>
   </div>
   <script>
     const dropZone = document.getElementById('drop-zone');
@@ -137,7 +121,7 @@ template = """
             document.getElementById('progress-bar').style.display='none';
             const resp = JSON.parse(xhr.responseText);
             alert(resp.message);
-            document.getElementById('start-section').style.display='block';
+            document.getElementById('start-btn').style.display='block';
         };
         const fd = new FormData();
         fd.append('video', file);
@@ -156,39 +140,35 @@ template = """
       }else{
         prog.textContent = '';
       }
-      const dl = document.getElementById('download');
-      const link = document.getElementById('download-link');
-      const ttl = document.getElementById('ttl');
-      if(d.status==='Completed'){
-        dl.style.display='block';
-        link.textContent='Download Result';
-        link.href='/download';
-        if(d.ttl!==null){
-          ttl.style.display='block';
-          document.getElementById('ttl-val').textContent=d.ttl;
-        }else{
-          ttl.style.display='none';
-        }
-      }else if(d.status==='Failed'){
-        dl.style.display='block';
-        link.textContent='Download Log';
-        link.href='/log';
-        ttl.style.display='none';
+      const list = document.getElementById('video-list');
+      list.innerHTML = '';
+      for(const v of d.queue){
+        const li = document.createElement('li');
+        li.textContent = v;
+        list.appendChild(li);
+      }
+      const zipList = document.getElementById('zip-list');
+      zipList.innerHTML = '';
+      for(const z of d.results){
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.textContent = z;
+        a.href = '/download/'+encodeURIComponent(z);
+        li.appendChild(a);
+        zipList.appendChild(li);
+      }
+      const startBtn = document.getElementById('start-btn');
+      if(d.queue.length && d.status!=='Processing'){
+        startBtn.style.display='block';
       }else{
-        dl.style.display='none';
-        ttl.style.display='none';
+        startBtn.style.display='none';
       }
     }
     setInterval(checkStatus,2000);
     checkStatus();
 
     document.getElementById('start-btn').onclick = async () => {
-      const tw = document.getElementById('trigger-word').value || 'name';
-      await fetch('/start', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({trigger_word: tw})
-      });
+      await fetch('/start', {method:'POST'});
     };
   </script>
   <footer style="margin-top:40px;font-size:0.8em;">Version: {{ commit_id }}</footer>
@@ -206,24 +186,18 @@ def upload():
     if not file:
         return jsonify({'message': 'No file uploaded'}), 400
     INPUT_DIR.mkdir(exist_ok=True)
-    for f in INPUT_DIR.glob('*'):
-        f.unlink()
     video_path = INPUT_DIR / file.filename
     file.save(video_path)
     return jsonify({'message': f'Upload successful: {file.filename}'})
 
 @app.route('/start', methods=['POST'])
 def start():
-    global status, zip_result, progress
+    global status, zip_result, progress, results
     if status == 'Processing':
         return jsonify({'message': 'Pipeline already running'}), 400
-    videos = list(INPUT_DIR.glob('*'))
+    videos = sorted(INPUT_DIR.glob('*'))
     if not videos:
         return jsonify({'message': 'No videos found in input'}), 400
-    video = videos[0]
-
-    data = request.get_json(silent=True) or {}
-    trigger_word = data.get('trigger_word', 'name')
 
     status = 'Processing'
     progress = {"step": 0, "total": 8, "name": "Queued"}
@@ -231,36 +205,36 @@ def start():
     zip_result = None
 
     def run():
-        global status, zip_result, progress
-        out_dir = OUTPUT_DIR / trigger_word
-        work_dir = WORK_DIR / trigger_word
-        pipeline = Pipeline(INPUT_DIR, out_dir, work_dir)
+        global status, zip_result, progress, results
         try:
-            zip_result = pipeline.run(video, trigger_word=trigger_word, progress_cb=update_progress)
-            schedule_zip_cleanup(Path(zip_result))
+            for video in videos:
+                tw = video.stem
+                out_dir = OUTPUT_DIR / tw
+                work_dir = WORK_DIR / tw
+                pipeline = Pipeline(INPUT_DIR, out_dir, work_dir)
+                zip_result = pipeline.run(video, trigger_word=tw, progress_cb=update_progress)
+                results.append(Path(zip_result).name)
+                video.unlink()
             update_progress(progress['total'], 'Done')
             status = 'Completed'
         except Exception:
             update_progress(progress['total'], 'Failed')
             status = 'Failed'
-        finally:
-            for f in INPUT_DIR.glob('*'):
-                f.unlink()
 
     Thread(target=run, daemon=True).start()
     return jsonify({'message': 'Pipeline started'})
 
 @app.route('/status')
 def get_status():
-    ttl = None
-    if zip_expire is not None:
-        ttl = max(0, int(zip_expire - time.time()))
-    return jsonify({'status': status, 'progress': progress, 'ttl': ttl})
+    queue = [p.name for p in sorted(INPUT_DIR.glob('*'))]
+    res_names = [p for p in results]
+    return jsonify({'status': status, 'progress': progress, 'queue': queue, 'results': res_names})
 
-@app.route('/download')
-def download():
-    if zip_result and Path(zip_result).exists():
-        return send_file(zip_result, as_attachment=True)
+@app.route('/download/<name>')
+def download(name: str):
+    path = OUTPUT_DIR / f"{name}"
+    if path.exists():
+        return send_file(path, as_attachment=True)
     return 'No result available', 404
 
 @app.route('/log')

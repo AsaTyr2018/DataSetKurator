@@ -12,6 +12,16 @@ from ..logging_utils import log_step
 
 
 try:  # Optional dependency
+    try:
+        from torchvision.transforms.functional_tensor import rgb_to_grayscale  # type: ignore
+    except Exception:  # pragma: no cover - new torchvision versions
+        from torchvision.transforms.functional import rgb_to_grayscale
+        import types, sys
+
+        shim = types.ModuleType("torchvision.transforms.functional_tensor")
+        shim.rgb_to_grayscale = rgb_to_grayscale
+        sys.modules["torchvision.transforms.functional_tensor"] = shim
+
     from realesrgan import RealESRGAN
 except Exception:  # pragma: no cover - library may not be installed
     RealESRGAN = None  # type: ignore[misc]

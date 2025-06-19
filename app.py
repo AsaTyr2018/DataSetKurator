@@ -153,8 +153,8 @@ template = """
       const r = await fetch('/log');
       if(r.ok){
         const text = await r.text();
-        const lines = text.trim().split('\n').reverse();
-        logBox.textContent = lines.join('\n');
+        const lines = text.trim().split('\\n').reverse();
+        logBox.textContent = lines.join('\\n');
         logBox.scrollTop = 0;
       }
     }

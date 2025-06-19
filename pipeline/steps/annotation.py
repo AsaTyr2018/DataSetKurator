@@ -70,9 +70,33 @@ def _tag_image(
     image_size: int,
     img_path: Path,
     tags: List[str],
-    threshold: float = 0.35,
+    *,
+    threshold: float = 0.3,
+    max_tags: int | None = None,
+    min_tags: int | None = None,
 ) -> str:
-    """Return a comma-separated tag string for an image."""
+    """Return a comma-separated tag string for an image.
+
+    Parameters
+    ----------
+    session:
+        Inference session for the WD14 model.
+    image_size:
+        Target image size expected by the model.
+    img_path:
+        Image to tag.
+    tags:
+        List of tag names corresponding to the model outputs.
+    threshold:
+        Minimum score required for a tag to be included. Defaults to ``0.3``.
+    max_tags:
+        Optional upper bound for the number of tags to return. If ``None`` the
+        number of tags is unrestricted.
+    min_tags:
+        Optional minimum number of tags to return. If there are fewer than this
+        amount above ``threshold`` the highest scoring tags are added until the
+        minimum is reached.
+    """
 
     with Image.open(img_path) as img:
         img_tensor = _preprocess_image(img, image_size)
@@ -81,7 +105,20 @@ def _tag_image(
     label_name = session.get_outputs()[0].name
     scores = session.run([label_name], {input_name: img_tensor})[0][0]
 
-    selected = [tags[i] for i, s in enumerate(scores[4:]) if s > threshold]
+    tag_scores = [
+        (tags[i], float(scores[i + 4])) for i in range(len(tags))
+    ]
+    tag_scores.sort(key=lambda x: x[1], reverse=True)
+
+    selected = [tag for tag, s in tag_scores if s > threshold]
+
+    if max_tags is not None:
+        selected = selected[:max_tags]
+
+    if min_tags is not None and len(selected) < min_tags:
+        additional = [tag for tag, _ in tag_scores if tag not in selected]
+        selected.extend(additional[: min_tags - len(selected)])
+
     return ", ".join(selected)
 
 
@@ -124,7 +161,15 @@ def run(
     images = sorted(cropped_dir.glob("*.png"))
     total = len(images)
     for idx, img in enumerate(images, 1):
-        caption = _tag_image(session, img_size, img, tags)
+        caption = _tag_image(
+            session,
+            img_size,
+            img,
+            tags,
+            threshold=0.3,
+            max_tags=30,
+            min_tags=10,
+        )
         if caption:
             caption = f"{trigger_word}, {caption}"
         else:

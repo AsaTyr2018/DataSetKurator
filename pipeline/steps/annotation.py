@@ -11,7 +11,7 @@ import numpy as np
 import cv2
 from onnxruntime import InferenceSession
 
-from ..logging_utils import log_step
+from ..logging_utils import log_step, log_progress
 
 
 _REPO = "SmilingWolf/wd-swinv2-tagger-v3"
@@ -112,7 +112,9 @@ def run(cropped_dir: Path, captions_dir: Path, *, trigger_word: str = "name") ->
         log_step("Annotation completed with fallback")
         return
 
-    for img in sorted(cropped_dir.glob("*.png")):
+    images = sorted(cropped_dir.glob("*.png"))
+    total = len(images)
+    for idx, img in enumerate(images, 1):
         caption = _tag_image(session, img_size, img, tags)
         if caption:
             caption = f"{trigger_word}, {caption}"
@@ -120,5 +122,6 @@ def run(cropped_dir: Path, captions_dir: Path, *, trigger_word: str = "name") ->
             caption = trigger_word
         caption_file = captions_dir / f"{img.stem}.txt"
         caption_file.write_text(caption)
+        log_progress("Annotation", idx, total)
 
     log_step("Annotation completed")

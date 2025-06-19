@@ -11,7 +11,7 @@ import open_clip
 import umap
 from sklearn.cluster import KMeans
 
-from ..logging_utils import log_step
+from ..logging_utils import log_step, log_progress
 from .annotation import _load_tagger, _tag_image
 
 HAIR_COLORS = [
@@ -129,7 +129,9 @@ def run(images_dir: Path, workdir: Path) -> Path:
         log_step("Classification completed with fallback")
         return workdir
 
-    for img_path in sorted(images_dir.glob("*.png")):
+    images = sorted(images_dir.glob("*.png"))
+    total = len(images)
+    for idx, img_path in enumerate(images, 1):
         tag_str = _tag_image(session, img_size, img_path, tags, threshold=0.25)
         hair, eyes, length, accessory = _detect_attributes(tag_str)
         if hair == "unknown" or eyes == "unknown":
@@ -143,6 +145,7 @@ def run(images_dir: Path, workdir: Path) -> Path:
             char_dir = workdir / "_".join(parts)
         char_dir.mkdir(exist_ok=True)
         shutil.copy(img_path, char_dir / img_path.name)
+        log_progress("Classification", idx, total)
 
     unclassified = workdir / "unclassified"
     if unclassified.exists():

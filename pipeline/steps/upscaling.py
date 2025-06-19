@@ -8,7 +8,7 @@ from PIL import Image
 import torch
 import cv2
 
-from ..logging_utils import log_step
+from ..logging_utils import log_step, log_progress
 
 
 try:  # Optional dependency
@@ -102,7 +102,9 @@ def run(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = _load_model(device, scale)
 
-    for img_path in sorted(filtered_dir.glob("*.png")):
+    images = sorted(filtered_dir.glob("*.png"))
+    total = len(images)
+    for idx, img_path in enumerate(images, 1):
         with Image.open(img_path).convert("RGB") as img:
             if not _is_acceptable(img, blur_threshold, dark_threshold):
                 continue
@@ -117,6 +119,7 @@ def run(
 
             out_path = workdir / img_path.name
             up_img.save(out_path)
+        log_progress("Upscaling", idx, total)
 
     log_step("Upscaling completed")
     return workdir

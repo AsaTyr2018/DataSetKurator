@@ -38,6 +38,11 @@ def log_step(step: str) -> None:
     logger.dsk(step)
 
 
+def log_progress(prefix: str, count: int, total: int) -> None:
+    """Log a progress message of the form ``'<prefix> count/total'``."""
+    logger.dsk(f"{prefix} {count}/{total}")
+
+
 def rotate_log(job_name: str) -> None:
     """Rename the current log file and start a fresh one.
 

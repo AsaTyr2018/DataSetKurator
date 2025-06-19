@@ -57,3 +57,14 @@ weight file. If no model is found, cropping falls back to ``mediapipe`` (if
 installed) or ``animeface``.
 Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
 [AniRef-yolov8 releases](https://github.com/SoulflareRC/AniRef-yolov8/releases).
+
+For the optional upscaling step, download the anime models from
+[Real-ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/) – for
+example ``RealESRGAN_x2plus_anime_6B.pth`` or ``RealESRGAN_x4plus_anime_6B.pth``.
+Place the ``.pth`` file next to ``app.py`` (the working directory) so the
+pipeline can load it. Without the file the step falls back to a basic resize.
+
+If these projects help you, consider starring
+[SoulflareRC/AniRef-yolov8](https://github.com/SoulflareRC/AniRef-yolov8) and
+[xinntao/Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) as a small thank
+you to the authors.

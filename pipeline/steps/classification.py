@@ -11,6 +11,7 @@ from PIL import Image
 import open_clip
 import umap
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 from ..logging_utils import log_step, log_progress
 from .annotation import _load_tagger, _tag_image
@@ -29,6 +30,11 @@ HAIR_COLORS = [
     "white hair",
     "gray hair",
     "aqua hair",
+    "grey hair",
+    "violet hair",
+    "lavender hair",
+    "teal hair",
+    "auburn hair",
 ]
 
 HAIR_LENGTHS = [
@@ -53,6 +59,11 @@ EYE_COLORS = [
     "aqua eyes",
     "orange eyes",
     "gray eyes",
+    "grey eyes",
+    "silver eyes",
+    "gold eyes",
+    "teal eyes",
+    "violet eyes",
 ]
 
 
@@ -78,8 +89,12 @@ def _detect_attributes(tag_str: str) -> tuple[str, str, str, str]:
     return hair, eyes, length, accessory
 
 
-def _cluster_unknowns(unclassified_dir: Path, *, n_clusters: int = 5) -> None:
-    """Cluster images in ``unclassified_dir`` using CLIP embeddings and KMeans."""
+def _cluster_unknowns(unclassified_dir: Path, *, n_clusters: int | None = None) -> None:
+    """Cluster images in ``unclassified_dir`` using CLIP embeddings and KMeans.
+
+    If ``n_clusters`` is ``None`` an optimal value is estimated via the
+    silhouette score in the range 2..10 (or the number of images).
+    """
 
     images = sorted(unclassified_dir.glob("*.png"))
     if not images:
@@ -100,10 +115,26 @@ def _cluster_unknowns(unclassified_dir: Path, *, n_clusters: int = 5) -> None:
                 emb = model.encode_image(img_t)
             feats.append(emb.cpu().numpy()[0])
 
-    if len(feats) < n_clusters:
-        n_clusters = max(1, len(feats))
     feats = np.stack(feats)
     reduced = umap.UMAP(n_components=5, random_state=42).fit_transform(feats)
+
+    if n_clusters is None:
+        max_k = min(len(feats), 10)
+        if max_k <= 1:
+            n_clusters = 1
+        else:
+            best_k = 2
+            best_score = -1.0
+            for k in range(2, max_k + 1):
+                labels_tmp = KMeans(n_clusters=k, random_state=42).fit_predict(reduced)
+                score = silhouette_score(reduced, labels_tmp)
+                if score > best_score:
+                    best_k = k
+                    best_score = score
+            n_clusters = best_k
+    elif len(feats) < n_clusters:
+        n_clusters = max(1, len(feats))
+
     labels = KMeans(n_clusters=n_clusters, random_state=42).fit_predict(reduced)
 
     for img_path, label in zip(images, labels):
@@ -141,8 +172,11 @@ def run(
     images = sorted(images_dir.glob("*.png"))
     total = len(images)
     for idx, img_path in enumerate(images, 1):
-        tag_str = _tag_image(session, img_size, img_path, tags, threshold=0.25)
+        tag_str = _tag_image(session, img_size, img_path, tags, threshold=0.20)
         hair, eyes, length, accessory = _detect_attributes(tag_str)
+        if hair == "unknown" or eyes == "unknown":
+            tag_str = _tag_image(session, img_size, img_path, tags, threshold=0.15)
+            hair, eyes, length, accessory = _detect_attributes(tag_str)
         if hair == "unknown" or eyes == "unknown":
             char_dir = workdir / "unclassified"
         else:

@@ -22,7 +22,10 @@ try:  # Optional dependency
         shim.rgb_to_grayscale = rgb_to_grayscale
         sys.modules["torchvision.transforms.functional_tensor"] = shim
 
-    from realesrgan import RealESRGAN
+    try:
+        from realesrgan import RealESRGAN  # old API
+    except Exception:  # pragma: no cover - fallback to new API
+        from realesrgan.utils import RealESRGANer as RealESRGAN
 except Exception:  # pragma: no cover - library may not be installed
     RealESRGAN = None  # type: ignore[misc]
 
@@ -34,9 +37,17 @@ def _load_model(device: torch.device, scale: int) -> Optional[object]:
         log_step("RealESRGAN not available – using PIL resize")
         return None
     try:
-        model = RealESRGAN(device, scale=scale)
-        model.load_weights(f"RealESRGAN_x{scale}plus_anime_6B.pth")
-        model.eval()
+        url = (
+            f"https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/"
+            f"RealESRGAN_x{scale}plus_anime_6B.pth"
+        )
+        # ``RealESRGANer`` automatically downloads weights when given a URL
+        model = RealESRGAN(
+            scale=scale,
+            model_path=url,
+            device=device,
+            half=False,
+        )
         return model
     except Exception as exc:  # pragma: no cover - runtime download may fail
         log_step(f"RealESRGAN load failed: {exc}; falling back to PIL resize")
@@ -79,7 +90,7 @@ def run(
 
             if model is not None:
                 with torch.no_grad():  # pragma: no cover - heavy model inference
-                    upscaled = model.predict(np.array(img))
+                    upscaled, _ = model.enhance(np.array(img))
                 up_img = Image.fromarray(upscaled)
             else:
                 width, height = img.size

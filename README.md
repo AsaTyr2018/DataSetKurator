@@ -58,13 +58,17 @@ installed) or ``animeface``.
 Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
 [AniRef-yolov8 releases](https://github.com/SoulflareRC/AniRef-yolov8/releases).
 
-For the optional upscaling step, download the anime models from
-[Real-ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/) – for
-example ``RealESRGAN_x2plus_anime_6B.pth`` or ``RealESRGAN_x4plus_anime_6B.pth``.
-Place the ``.pth`` file next to ``app.py`` (the working directory) so the
-pipeline can load it. Without the file the step falls back to a basic resize.
-Upscaling also requires the ``realesrgan`` Python package and its dependencies
-(``torch`` and ``torchvision``) to be installed.
+The optional upscaling step relies on the ``realesrgan`` library (v0.3 or
+newer). When run it automatically downloads
+``RealESRGAN_x2plus_anime_6B.pth`` or ``RealESRGAN_x4plus_anime_6B.pth`` from
+the official [Real‑ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/)
+if the file does not already exist next to ``app.py``. Keeping the weights in
+place avoids repeated downloads. Upscaling requires ``torch`` and
+``torchvision`` to be installed.
+
+If RealESRGAN cannot be used you may try alternative models such as
+``realesr-general-x4v3.pth`` or the smaller ``realesr-animevideov3``. External
+tools like Waifu2x or Real‑CUGAN are also viable substitutes.
 
 If these projects help you, consider starring
 [SoulflareRC/AniRef-yolov8](https://github.com/SoulflareRC/AniRef-yolov8) and

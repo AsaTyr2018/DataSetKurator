@@ -63,6 +63,8 @@ For the optional upscaling step, download the anime models from
 example ``RealESRGAN_x2plus_anime_6B.pth`` or ``RealESRGAN_x4plus_anime_6B.pth``.
 Place the ``.pth`` file next to ``app.py`` (the working directory) so the
 pipeline can load it. Without the file the step falls back to a basic resize.
+Upscaling also requires the ``realesrgan`` Python package and its dependencies
+(``torch`` and ``torchvision``) to be installed.
 
 If these projects help you, consider starring
 [SoulflareRC/AniRef-yolov8](https://github.com/SoulflareRC/AniRef-yolov8) and

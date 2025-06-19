@@ -74,7 +74,7 @@ template = """
     #progress-bar .bar{height:100%;width:0;background:#4ea3ff;}
     #status{font-weight:bold;margin-top:10px;}
     a{color:#4ea3ff;}
-    pre{background:#000;color:#0f0;padding:10px;height:200px;overflow:auto;margin-top:10px;flex:1;white-space:pre-wrap;word-break:break-word;}
+    pre{background:#000;color:#0f0;padding:10px;height:200px;max-height:800px;overflow:auto;margin-top:10px;flex:1;white-space:pre-wrap;word-break:break-word;}
     footer{background:#1e1e1e;padding:10px;text-align:center;font-size:0.9em;}
   </style>
 </head>

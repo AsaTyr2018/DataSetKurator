@@ -65,7 +65,8 @@ Older versions fall back to ``RealESRGAN_x4plus_anime_6B.pth``. Both files are
 fetched from the official
 [Real‑ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/). Keep
 the weights next to ``app.py`` to avoid repeated downloads. Upscaling requires
-``torch`` and ``torchvision`` to be installed.
+``torch`` and ``torchvision`` to be installed. Upscaling defaults to a 4x scale
+factor to match the ``realesr-animevideov3`` model.
 
 If RealESRGAN cannot be used you may try alternative models such as
 ``realesr-general-x4v3.pth`` or the smaller ``realesr-animevideov3``. External

@@ -2,6 +2,7 @@ flask
 pillow
 imagehash
 torch
+torchvision
 animeface
 numpy
 huggingface-hub

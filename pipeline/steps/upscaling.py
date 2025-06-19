@@ -37,13 +37,13 @@ def _load_model(device: torch.device, scale: int) -> Optional[object]:
         log_step("RealESRGAN not available – using PIL resize")
         return None
     try:
-        url = (
-            "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/"
-            "RealESRGAN_x4plus_anime_6B.pth"
-        )
         if RealESRGAN.__name__ == "RealESRGANer":  # modernes API
             from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 
+            url = (
+                "https://github.com/xinntao/Real-ESRGAN/releases/download/"
+                "v0.2.5.0/realesr-animevideov3.pth"
+            )
             arch = SRVGGNetCompact(
                 num_in_ch=3,
                 num_out_ch=3,
@@ -61,6 +61,10 @@ def _load_model(device: torch.device, scale: int) -> Optional[object]:
                 half=False,
             )
         else:  # ältere API
+            url = (
+                "https://github.com/xinntao/Real-ESRGAN/releases/download/"
+                "v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"
+            )
             model = RealESRGAN(device, scale=scale)
             model.load_weights(url)
         return model

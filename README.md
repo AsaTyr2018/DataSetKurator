@@ -60,6 +60,7 @@ Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
 
 The optional upscaling step relies on the ``realesrgan`` library (v0.3 or
 newer). When run it automatically downloads
+
 ``RealESRGAN_x4plus_anime_6B.pth`` from the official
 [Real‑ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/) if the
 file does not already exist next to ``app.py``. Keeping the weights in place

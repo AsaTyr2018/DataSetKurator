@@ -1,5 +1,11 @@
 # Changelog
 
+## 00.25.01 Public Beta
+- Add settings panel (1c67d6a)
+- Derive version from changelog (e928e87)
+- Improve character classification (087def1)
+- Adjust tagging thresholds and limits (20b2af7)
+
 ## 00.24.02
 - Limit log panel height (dc9e9d2)
 

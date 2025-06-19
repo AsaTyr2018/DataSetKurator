@@ -1,45 +1,34 @@
-# ✨ DataSetKurator ✨
+# 🌟 DataSetKurator  — Public Beta
 
-DataSetKurator turns an anime film into a dataset ready for LoRA training. Every step is logged to `logs/process.log`.
+**Transform any anime movie into a structured LoRA dataset with just one click.**
 
-## Pipeline Overview
+DataSetKurator ships a sleek web interface and an automated pipeline that turns
+raw footage into neatly cropped images with captions. Every step is logged to
+`logs/process.log` for full transparency.
 
-1. **Frame Extraction** – `ffmpeg` pulls images from the video
-2. **Deduplication** – perceptual hashing drops duplicates
-3. **Filtering** – remove unwanted shots
-4. **Upscaling & Quality Check** – RealESRGAN or PIL resize with blur/dark checks
-5. **Cropping** – faces cut out using a YOLOv8 model if present, otherwise `mediapipe` or `animeface` as fallbacks. YOLO models are automatically detected in `models/` and processed in batches for speed.
-6. **Annotation** – WD14 tagger generates captions
-7. **Character Classification** – images grouped by detected hair and eye color
-   with optional style hints like hair length and glasses (`<hair>_<eyes>[_length][ _accessory]`).
-   Unknown images are automatically clustered with CLIP+UMAP for easier review.
-8. **Packaging** – images and captions are zipped for download
+---
 
-## Install via setup script
+## ✨ Highlights
 
-Run as root to install the app as a service:
+- **Web Dashboard** with drag‑and‑drop uploads and live log view
+- **Custom Settings Panel** to tune FPS, deduplication, upscaling and more
+- **Model Preloading** for faster inference (YOLOv8, WD14 and RealESRGAN)
+- **Automatic Version Display** derived from `changelog.md`
+- **Improved Character Classification** with CLIP clustering
+- **Flexible Tagging** thanks to adjustable thresholds
 
-```bash
-sudo ./setup.sh --install
-```
+## 🛠 Pipeline
 
-This copies the project to `/opt/DataSetKurator`, creates a virtual environment, installs all Python dependencies and enables a `systemd` service.
+1. **Frame Extraction** – `ffmpeg` grabs frames from the video
+2. **Deduplication** – perceptual hashing removes near duplicates
+3. **Filtering** – flatten folders and drop unwanted shots
+4. **Upscaling & QC** – RealESRGAN or PIL resize with blur/dark checks
+5. **Cropping** – detects faces via YOLOv8, `mediapipe` or `animeface`
+6. **Annotation** – WD14 tagger creates captions
+7. **Character Classification** – groups images by hair/eye color, length and glasses
+8. **Packaging** – outputs images and captions zipped for download
 
-To remove the installation run:
-
-```bash
-sudo ./setup.sh --Deinstall
-```
-
-Update an existing installation with:
-
-```bash
-sudo ./setup.sh --Update
-```
-
-## Manual Run
-
-For a local test without the service:
+## 🚀 Quick Start
 
 ```bash
 python3 -m venv venv
@@ -48,39 +37,23 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open [http://localhost:8000](http://localhost:8000) to upload a video and start the pipeline.
-You can optionally set a *trigger word* before starting. This word will be
-prepended as the first tag in every generated caption.
-Place any YOLOv8 ``.pt`` file inside the new ``models/`` folder. The pipeline
-indexes this directory on startup and automatically uses the first matching
-weight file. If no model is found, cropping falls back to ``mediapipe`` (if
-installed) or ``animeface``.
-Pretrained weights such as ``AniRef40000-m-epoch75.pt`` can be obtained from the
-[AniRef-yolov8 releases](https://github.com/SoulflareRC/AniRef-yolov8/releases).
+Open [http://localhost:8000](http://localhost:8000) and drop your video.
+Configure the settings as needed, hit **Start Batch** and watch the progress.
 
-The optional upscaling step relies on the ``realesrgan`` library (v0.3 or
-newer). When run it automatically downloads
-``realesr-animevideov3.pth`` if the modern ``RealESRGANer`` API is available.
-Older versions fall back to ``RealESRGAN_x4plus_anime_6B.pth``. Both files are
-fetched from the official
-[Real‑ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/). Keep
-the weights next to ``app.py`` to avoid repeated downloads. Upscaling requires
-``torch`` and ``torchvision`` to be installed. Upscaling defaults to a 4x scale
-factor to match the ``realesr-animevideov3`` model.
+## ⚙️ Service Installation
 
-If RealESRGAN cannot be used you may try alternative models such as
-``realesr-general-x4v3.pth`` or the smaller ``realesr-animevideov3``. External
-tools like Waifu2x or Real‑CUGAN are also viable substitutes.
+Running on a server? Use the setup script:
 
-## Model Preloading
+```bash
+sudo ./setup.sh --install
+```
 
-The pipeline preloads the YOLOv8 detector, WD14 tagger and RealESRGAN weights in
-background threads so that heavy models are ready once their step is reached.
-This speeds up processing but keeps the weights in GPU memory. On GPUs with
-limited RAM you can disable preloading by setting the environment variable
-``DSK_PRELOAD=0`` or by instantiating ``Pipeline`` with ``preload=False``.
+This copies everything to `/opt/DataSetKurator`, installs requirements and
+creates a `systemd` service. Update or remove it via `--Update` or `--Deinstall`.
 
-If these projects help you, consider starring
-[SoulflareRC/AniRef-yolov8](https://github.com/SoulflareRC/AniRef-yolov8) and
-[xinntao/Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) as a small thank
-you to the authors.
+## 🙏 Credits
+
+- [SoulflareRC/AniRef-yolov8](https://github.com/SoulflareRC/AniRef-yolov8)
+- [xinntao/Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)
+
+DataSetKurator v0.25.01 Public Beta – one tool to rule them all.

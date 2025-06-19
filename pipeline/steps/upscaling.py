@@ -90,7 +90,7 @@ def run(
     filtered_dir: Path,
     workdir: Path,
     *,
-    scale: int = 2,
+    scale: int = 4,
     blur_threshold: float = 100.0,
     dark_threshold: float = 40.0,
 ) -> Path:

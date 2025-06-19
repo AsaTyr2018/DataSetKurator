@@ -55,6 +55,14 @@ class Pipeline:
         *,
         trigger_word: str = "name",
         progress_cb: Callable[[int, str], None] | None = None,
+        fps: int = 1,
+        dedup_threshold: int = 8,
+        scale: int = 4,
+        blur_threshold: float = 100.0,
+        dark_threshold: float = 40.0,
+        margin: float = 0.3,
+        conf_threshold: float = 0.5,
+        batch_size: int = 4,
     ):
         """Execute the full pipeline on ``video_path``.
 
@@ -64,6 +72,22 @@ class Pipeline:
             Input video file to process.
         trigger_word:
             Tag to prepend to every caption. Defaults to ``"name"``.
+        fps:
+            Frames per second for extraction.
+        dedup_threshold:
+            Hamming distance for deduplication.
+        scale:
+            Upscaling factor.
+        blur_threshold:
+            Minimum Laplacian variance to keep a frame.
+        dark_threshold:
+            Minimum brightness level.
+        margin:
+            Extra border around detected faces.
+        conf_threshold:
+            YOLO confidence threshold.
+        batch_size:
+            How many images to process per YOLO batch.
         """
         try:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -85,12 +109,12 @@ class Pipeline:
             if progress_cb:
                 progress_cb(1, 'Frame Extraction')
             work_frames = self.work_dir / 'frames'
-            frames = frame_extraction.run(video_path, work_frames, fps=1)
+            frames = frame_extraction.run(video_path, work_frames, fps=fps)
 
             work_dedup = self.work_dir / 'dedup'
             if progress_cb:
                 progress_cb(2, 'Deduplication')
-            deduped = deduplication.run(frames, work_dedup)
+            deduped = deduplication.run(frames, work_dedup, threshold=dedup_threshold)
             shutil.rmtree(work_frames)
 
             work_filter = self.work_dir / 'filtering'
@@ -105,6 +129,9 @@ class Pipeline:
             upscaled = upscaling.run(
                 filtered,
                 work_upscale,
+                scale=scale,
+                blur_threshold=blur_threshold,
+                dark_threshold=dark_threshold,
                 model=get_model("realesrgan") if self.preload else None,
                 device=device,
             )
@@ -116,8 +143,11 @@ class Pipeline:
             cropped = cropping.run(
                 upscaled,
                 work_crop,
+                margin=margin,
                 yolo_model=self.yolo_model,
                 yolo=get_model("yolo") if self.preload else None,
+                conf_threshold=conf_threshold,
+                batch_size=batch_size,
             )
             shutil.rmtree(work_upscale)
 

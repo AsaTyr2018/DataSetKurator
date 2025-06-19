@@ -122,12 +122,66 @@ template = """
     a{color:#4ea3ff;}
     pre{background:#000;color:#0f0;padding:10px;height:200px;max-height:800px;overflow:auto;margin-top:10px;flex:1;white-space:pre-wrap;word-break:break-word;}
     footer{background:#1e1e1e;padding:10px;text-align:center;font-size:0.9em;}
+    #settings{background:#1e1e1e;color:#eee;padding:10px;border-bottom:1px solid #333;}
+    #settings summary{cursor:pointer;font-weight:bold;font-size:1.2em;}
+    .settings-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+    .settings-grid label{display:flex;flex-direction:column;flex:1 1 200px;font-size:0.9em;}
+    .settings-grid label span{margin-top:4px;}
+    .settings-grid label small{color:#aaa;font-size:0.8em;}
   </style>
 </head>
 <body>
   <header>
     <h1>DataSetKurator</h1>
   </header>
+  <details id=\"settings\" style=\"width:100%;\">
+    <summary>Settings</summary>
+    <div class=\"settings-grid\">
+      <label>Trigger Word
+        <input type=\"text\" id=\"trigger\" placeholder=\"video name\">
+      </label>
+      <label>FPS
+        <input type=\"range\" id=\"fps\" min=\"1\" max=\"30\" value=\"1\" step=\"1\">
+        <span id=\"fps-val\">1</span>
+        <small>frames per second</small>
+      </label>
+      <label>Dedup Threshold
+        <input type=\"range\" id=\"dedup\" min=\"1\" max=\"16\" value=\"8\" step=\"1\">
+        <span id=\"dedup-val\">8</span>
+        <small>max hash distance</small>
+      </label>
+      <label>Upscale
+        <input type=\"range\" id=\"scale\" min=\"1\" max=\"8\" value=\"4\" step=\"1\">
+        <span id=\"scale-val\">4</span>
+        <small>enlarge factor</small>
+      </label>
+      <label>Blur Limit
+        <input type=\"range\" id=\"blur\" min=\"0\" max=\"300\" value=\"100\" step=\"1\">
+        <span id=\"blur-val\">100</span>
+        <small>min blur variance</small>
+      </label>
+      <label>Dark Limit
+        <input type=\"range\" id=\"dark\" min=\"0\" max=\"100\" value=\"40\" step=\"1\">
+        <span id=\"dark-val\">40</span>
+        <small>min brightness</small>
+      </label>
+      <label>Margin
+        <input type=\"range\" id=\"margin\" min=\"0\" max=\"1\" value=\"0.3\" step=\"0.01\">
+        <span id=\"margin-val\">0.3</span>
+        <small>face crop border</small>
+      </label>
+      <label>YOLO Confidence
+        <input type=\"range\" id=\"conf\" min=\"0\" max=\"1\" value=\"0.5\" step=\"0.01\">
+        <span id=\"conf-val\">0.5</span>
+        <small>min detection score</small>
+      </label>
+      <label>Batch Size
+        <input type=\"range\" id=\"batch\" min=\"1\" max=\"16\" value=\"4\" step=\"1\">
+        <span id=\"batch-val\">4</span>
+        <small>images per batch</small>
+      </label>
+    </div>
+  </details>
   <div id=\"content\">
     <div class=\"box\">
       <h2>Job Queue</h2>
@@ -245,8 +299,43 @@ template = """
     checkStatus();
     fetchLog();
 
+    function getSettings(){
+      return {
+        trigger_word: document.getElementById('trigger').value,
+        fps: parseInt(document.getElementById('fps').value),
+        dedup_threshold: parseInt(document.getElementById('dedup').value),
+        scale: parseInt(document.getElementById('scale').value),
+        blur_threshold: parseFloat(document.getElementById('blur').value),
+        dark_threshold: parseFloat(document.getElementById('dark').value),
+        margin: parseFloat(document.getElementById('margin').value),
+        conf_threshold: parseFloat(document.getElementById('conf').value),
+        batch_size: parseInt(document.getElementById('batch').value)
+      };
+    }
+
+    const pairs = [
+      ['fps','fps-val'],
+      ['dedup','dedup-val'],
+      ['scale','scale-val'],
+      ['blur','blur-val'],
+      ['dark','dark-val'],
+      ['margin','margin-val'],
+      ['conf','conf-val'],
+      ['batch','batch-val']
+    ];
+    for(const [id,val] of pairs){
+      const s = document.getElementById(id);
+      const o = document.getElementById(val);
+      s.oninput = () => { o.textContent = s.value; };
+    }
+
     document.getElementById('start-btn').onclick = async () => {
-      await fetch('/start', {method:'POST'});
+      const settings = getSettings();
+      await fetch('/start', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(settings)
+      });
     };
   </script>
 </body>
@@ -278,6 +367,17 @@ def start():
     if not videos:
         return jsonify({'message': 'No videos found in input'}), 400
 
+    data = request.get_json(silent=True) or {}
+
+    fps = int(data.get('fps', 1))
+    dedup_threshold = int(data.get('dedup_threshold', 8))
+    scale = int(data.get('scale', 4))
+    blur_threshold = float(data.get('blur_threshold', 100.0))
+    dark_threshold = float(data.get('dark_threshold', 40.0))
+    margin = float(data.get('margin', 0.3))
+    conf_threshold = float(data.get('conf_threshold', 0.5))
+    batch_size = int(data.get('batch_size', 4))
+
     status = 'Processing'
     progress = {"step": 0, "total": 8, "name": "Queued"}
     update_progress(0, 'Queued')
@@ -292,7 +392,19 @@ def start():
                 work_dir = WORK_DIR / tw
                 pipeline = Pipeline(INPUT_DIR, out_dir, work_dir)
                 try:
-                    zip_result = pipeline.run(video, trigger_word=tw, progress_cb=update_progress)
+                    zip_result = pipeline.run(
+                        video,
+                        trigger_word=data.get('trigger_word', tw) or tw,
+                        progress_cb=update_progress,
+                        fps=fps,
+                        dedup_threshold=dedup_threshold,
+                        scale=scale,
+                        blur_threshold=blur_threshold,
+                        dark_threshold=dark_threshold,
+                        margin=margin,
+                        conf_threshold=conf_threshold,
+                        batch_size=batch_size,
+                    )
                     results.append(Path(zip_result).name)
                     video.unlink()
                 finally:

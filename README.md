@@ -28,6 +28,10 @@ raw footage into neatly cropped images with captions. Every step is logged to
 7. **Character Classification** – groups images by hair/eye color, length and glasses
 8. **Packaging** – outputs images and captions zipped for download
 
+## Known Issues
+- Annotation stops with an Error -> Working on it
+- Without Annotation, Classification not work
+
 ## 🚀 Quick Start
 
 ```bash

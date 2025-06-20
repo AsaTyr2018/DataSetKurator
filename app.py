@@ -124,8 +124,10 @@ template = """
     footer{background:#1e1e1e;padding:10px;text-align:center;font-size:0.9em;}
     #settings{background:#1e1e1e;color:#eee;padding:10px;border-bottom:1px solid #333;}
     #settings summary{cursor:pointer;font-weight:bold;font-size:1.2em;}
-    .step-box{border:1px solid #333;padding:10px;margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;}
-    .step-box h3{width:100%;margin:0 0 10px 0;font-size:1em;}
+    .step-box{border:1px solid #333;padding:10px;margin-top:10px;}
+    .step-box[open]{display:flex;flex-wrap:wrap;gap:10px;}
+    .step-box summary{cursor:pointer;font-weight:bold;font-size:1em;margin:0;}
+    .step-box[open] summary{width:100%;margin-bottom:10px;}
     .step-box label{display:flex;flex-direction:column;flex:1 1 200px;font-size:0.9em;}
     .step-box label span{margin-top:4px;}
     .step-box label small{color:#aaa;font-size:0.8em;}
@@ -137,30 +139,30 @@ template = """
   </header>
   <details id=\"settings\" style=\"width:100%;\">
     <summary>Settings</summary>
-    <div class=\"step-box\">
-      <h3>Frame Extraction</h3>
+    <details class=\"step-box\">
+      <summary>Frame Extraction</summary>
       <label>FPS
         <input type=\"range\" id=\"fps\" min=\"1\" max=\"30\" value=\"1\" step=\"1\">
         <span id=\"fps-val\">1</span>
         <small>frames per second</small>
       </label>
       <label><input type=\"checkbox\" id=\"skip-extract\"> Skip Extraction</label>
-    </div>
-    <div class=\"step-box\">
-      <h3>Deduplication</h3>
+    </details>
+    <details class=\"step-box\">
+      <summary>Deduplication</summary>
       <label>Dedup Threshold
         <input type=\"range\" id=\"dedup\" min=\"1\" max=\"16\" value=\"8\" step=\"1\">
         <span id=\"dedup-val\">8</span>
         <small>max hash distance</small>
       </label>
       <label><input type=\"checkbox\" id=\"skip-dedup\"> Skip Deduplication</label>
-    </div>
-    <div class=\"step-box\">
-      <h3>Filtering</h3>
+    </details>
+    <details class=\"step-box\">
+      <summary>Filtering</summary>
       <label><input type=\"checkbox\" id=\"skip-filter\"> Skip Filtering</label>
-    </div>
-    <div class=\"step-box\">
-      <h3>Upscaling</h3>
+    </details>
+    <details class=\"step-box\">
+      <summary>Upscaling</summary>
       <label>Upscale
         <input type=\"range\" id=\"scale\" min=\"1\" max=\"8\" value=\"4\" step=\"1\">
         <span id=\"scale-val\">4</span>
@@ -177,9 +179,9 @@ template = """
         <small>min brightness</small>
       </label>
       <label><input type=\"checkbox\" id=\"skip-upscale\"> Skip Upscaling</label>
-    </div>
-    <div class=\"step-box\">
-      <h3>Cropping</h3>
+    </details>
+    <details class=\"step-box\">
+      <summary>Cropping</summary>
       <label>Margin
         <input type=\"range\" id=\"margin\" min=\"0\" max=\"1\" value=\"0.3\" step=\"0.01\">
         <span id=\"margin-val\">0.3</span>
@@ -196,18 +198,18 @@ template = """
         <small>images per batch</small>
       </label>
       <label><input type=\"checkbox\" id=\"skip-crop\"> Skip Cropping</label>
-    </div>
-    <div class=\"step-box\">
-      <h3>Annotation</h3>
+    </details>
+    <details class=\"step-box\">
+      <summary>Annotation</summary>
       <label>Trigger Word
         <input type=\"text\" id=\"trigger\" placeholder=\"video name\">
       </label>
       <label><input type=\"checkbox\" id=\"skip-annot\"> Skip Annotation</label>
-    </div>
-    <div class=\"step-box\">
-      <h3>Classification</h3>
+    </details>
+    <details class=\"step-box\">
+      <summary>Classification</summary>
       <label><input type=\"checkbox\" id=\"skip-class\"> Skip Classification</label>
-    </div>
+    </details>
   </details>
   <div id=\"content\">
     <div class=\"box\">

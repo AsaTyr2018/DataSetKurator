@@ -39,6 +39,8 @@ python app.py
 
 Open [http://localhost:8000](http://localhost:8000) and drop your video.
 Configure the settings as needed, hit **Start Batch** and watch the progress.
+Each pipeline step now has its own box with a "Skip" checkbox so you can
+bypass individual stages.
 
 ## ⚙️ Service Installation
 

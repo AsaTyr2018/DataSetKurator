@@ -63,6 +63,12 @@ class Pipeline:
         margin: float = 0.3,
         conf_threshold: float = 0.5,
         batch_size: int = 4,
+        skip_deduplication: bool = False,
+        skip_filtering: bool = False,
+        skip_upscaling: bool = False,
+        skip_cropping: bool = False,
+        skip_annotation: bool = False,
+        skip_classification: bool = False,
     ):
         """Execute the full pipeline on ``video_path``.
 
@@ -106,73 +112,118 @@ class Pipeline:
             if self.work_dir.exists():
                 shutil.rmtree(self.work_dir)
             self.output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Frame Extraction is mandatory
             if progress_cb:
                 progress_cb(1, 'Frame Extraction')
             work_frames = self.work_dir / 'frames'
             frames = frame_extraction.run(video_path, work_frames, fps=fps)
+            current = frames
 
+            # Deduplication
             work_dedup = self.work_dir / 'dedup'
-            if progress_cb:
-                progress_cb(2, 'Deduplication')
-            deduped = deduplication.run(frames, work_dedup, threshold=dedup_threshold)
-            shutil.rmtree(work_frames)
+            if skip_deduplication:
+                if progress_cb:
+                    progress_cb(2, 'Deduplication (skipped)')
+                deduped = current
+            else:
+                if progress_cb:
+                    progress_cb(2, 'Deduplication')
+                deduped = deduplication.run(current, work_dedup, threshold=dedup_threshold)
+                shutil.rmtree(current)
+                current = deduped
 
+            # Filtering
             work_filter = self.work_dir / 'filtering'
-            if progress_cb:
-                progress_cb(3, 'Filtering')
-            filtered = filtering.run(deduped, work_filter)
-            shutil.rmtree(work_dedup)
+            if skip_filtering:
+                if progress_cb:
+                    progress_cb(3, 'Filtering (skipped)')
+                filtered = current
+            else:
+                if progress_cb:
+                    progress_cb(3, 'Filtering')
+                filtered = filtering.run(current, work_filter)
+                shutil.rmtree(current)
+                current = filtered
 
+            # Upscaling
             work_upscale = self.work_dir / 'upscaling'
-            if progress_cb:
-                progress_cb(4, 'Upscaling')
-            upscaled = upscaling.run(
-                filtered,
-                work_upscale,
-                scale=scale,
-                blur_threshold=blur_threshold,
-                dark_threshold=dark_threshold,
-                model=get_model("realesrgan") if self.preload else None,
-                device=device,
-            )
-            shutil.rmtree(work_filter)
+            if skip_upscaling:
+                if progress_cb:
+                    progress_cb(4, 'Upscaling (skipped)')
+                upscaled = current
+            else:
+                if progress_cb:
+                    progress_cb(4, 'Upscaling')
+                upscaled = upscaling.run(
+                    current,
+                    work_upscale,
+                    scale=scale,
+                    blur_threshold=blur_threshold,
+                    dark_threshold=dark_threshold,
+                    model=get_model("realesrgan") if self.preload else None,
+                    device=device,
+                )
+                shutil.rmtree(current)
+                current = upscaled
 
+            # Cropping
             work_crop = self.work_dir / 'cropping'
-            if progress_cb:
-                progress_cb(5, 'Cropping')
-            cropped = cropping.run(
-                upscaled,
-                work_crop,
-                margin=margin,
-                yolo_model=self.yolo_model,
-                yolo=get_model("yolo") if self.preload else None,
-                conf_threshold=conf_threshold,
-                batch_size=batch_size,
-            )
-            shutil.rmtree(work_upscale)
+            if skip_cropping:
+                if progress_cb:
+                    progress_cb(5, 'Cropping (skipped)')
+                cropped = current
+            else:
+                if progress_cb:
+                    progress_cb(5, 'Cropping')
+                cropped = cropping.run(
+                    current,
+                    work_crop,
+                    margin=margin,
+                    yolo_model=self.yolo_model,
+                    yolo=get_model("yolo") if self.preload else None,
+                    conf_threshold=conf_threshold,
+                    batch_size=batch_size,
+                )
+                shutil.rmtree(current)
+                current = cropped
 
             captions_dir = self.output_dir / 'captions'
-            if progress_cb:
-                progress_cb(6, 'Annotation')
-            annotation.run(
-                cropped,
-                captions_dir,
-                trigger_word=trigger_word,
-                preloaded=get_model("tagger") if self.preload else None,
-            )
+            if skip_annotation:
+                if progress_cb:
+                    progress_cb(6, 'Annotation (skipped)')
+            else:
+                if progress_cb:
+                    progress_cb(6, 'Annotation')
+                annotation.run(
+                    current,
+                    captions_dir,
+                    trigger_word=trigger_word,
+                    preloaded=get_model("tagger") if self.preload else None,
+                )
 
             work_class = self.work_dir / 'classification'
-            if progress_cb:
-                progress_cb(7, 'Classification')
-            classified = classification.run(
-                cropped,
-                work_class,
-                preloaded=get_model("tagger") if self.preload else None,
-            )
+            if skip_classification:
+                if progress_cb:
+                    progress_cb(7, 'Classification (skipped)')
+                classified = current
+            else:
+                if progress_cb:
+                    progress_cb(7, 'Classification')
+                classified = classification.run(
+                    current,
+                    work_class,
+                    preloaded=get_model("tagger") if self.preload else None,
+                )
+                shutil.rmtree(current)
+                current = classified
+
             images_dir = self.output_dir / 'images'
-            shutil.copytree(classified, images_dir)
-            shutil.rmtree(work_class)
-            shutil.rmtree(work_crop)
+            shutil.copytree(current, images_dir)
+            if current.exists() and current != images_dir:
+                shutil.rmtree(current)
+            if work_crop.exists() and not skip_cropping:
+                shutil.rmtree(work_crop)
 
             # Zip output
             if progress_cb:

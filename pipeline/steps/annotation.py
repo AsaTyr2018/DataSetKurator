@@ -106,8 +106,9 @@ def _tag_image(
     label_name = session.get_outputs()[0].name
     scores = session.run([label_name], {input_name: img_tensor})[0][0]
 
+    max_idx = min(len(tags), len(scores) - 4)
     tag_scores = [
-        (tags[i], float(scores[i + 4])) for i in range(len(tags))
+        (tags[i], float(scores[i + 4])) for i in range(max_idx)
     ]
     tag_scores.sort(key=lambda x: x[1], reverse=True)
 

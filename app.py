@@ -124,10 +124,11 @@ template = """
     footer{background:#1e1e1e;padding:10px;text-align:center;font-size:0.9em;}
     #settings{background:#1e1e1e;color:#eee;padding:10px;border-bottom:1px solid #333;}
     #settings summary{cursor:pointer;font-weight:bold;font-size:1.2em;}
-    .settings-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
-    .settings-grid label{display:flex;flex-direction:column;flex:1 1 200px;font-size:0.9em;}
-    .settings-grid label span{margin-top:4px;}
-    .settings-grid label small{color:#aaa;font-size:0.8em;}
+    .step-box{border:1px solid #333;padding:10px;margin-top:10px;display:flex;flex-wrap:wrap;gap:10px;}
+    .step-box h3{width:100%;margin:0 0 10px 0;font-size:1em;}
+    .step-box label{display:flex;flex-direction:column;flex:1 1 200px;font-size:0.9em;}
+    .step-box label span{margin-top:4px;}
+    .step-box label small{color:#aaa;font-size:0.8em;}
   </style>
 </head>
 <body>
@@ -136,20 +137,30 @@ template = """
   </header>
   <details id=\"settings\" style=\"width:100%;\">
     <summary>Settings</summary>
-    <div class=\"settings-grid\">
-      <label>Trigger Word
-        <input type=\"text\" id=\"trigger\" placeholder=\"video name\">
-      </label>
+    <div class=\"step-box\">
+      <h3>Frame Extraction</h3>
       <label>FPS
         <input type=\"range\" id=\"fps\" min=\"1\" max=\"30\" value=\"1\" step=\"1\">
         <span id=\"fps-val\">1</span>
         <small>frames per second</small>
       </label>
+      <label><input type=\"checkbox\" id=\"skip-extract\"> Skip Extraction</label>
+    </div>
+    <div class=\"step-box\">
+      <h3>Deduplication</h3>
       <label>Dedup Threshold
         <input type=\"range\" id=\"dedup\" min=\"1\" max=\"16\" value=\"8\" step=\"1\">
         <span id=\"dedup-val\">8</span>
         <small>max hash distance</small>
       </label>
+      <label><input type=\"checkbox\" id=\"skip-dedup\"> Skip Deduplication</label>
+    </div>
+    <div class=\"step-box\">
+      <h3>Filtering</h3>
+      <label><input type=\"checkbox\" id=\"skip-filter\"> Skip Filtering</label>
+    </div>
+    <div class=\"step-box\">
+      <h3>Upscaling</h3>
       <label>Upscale
         <input type=\"range\" id=\"scale\" min=\"1\" max=\"8\" value=\"4\" step=\"1\">
         <span id=\"scale-val\">4</span>
@@ -165,6 +176,10 @@ template = """
         <span id=\"dark-val\">40</span>
         <small>min brightness</small>
       </label>
+      <label><input type=\"checkbox\" id=\"skip-upscale\"> Skip Upscaling</label>
+    </div>
+    <div class=\"step-box\">
+      <h3>Cropping</h3>
       <label>Margin
         <input type=\"range\" id=\"margin\" min=\"0\" max=\"1\" value=\"0.3\" step=\"0.01\">
         <span id=\"margin-val\">0.3</span>
@@ -180,6 +195,18 @@ template = """
         <span id=\"batch-val\">4</span>
         <small>images per batch</small>
       </label>
+      <label><input type=\"checkbox\" id=\"skip-crop\"> Skip Cropping</label>
+    </div>
+    <div class=\"step-box\">
+      <h3>Annotation</h3>
+      <label>Trigger Word
+        <input type=\"text\" id=\"trigger\" placeholder=\"video name\">
+      </label>
+      <label><input type=\"checkbox\" id=\"skip-annot\"> Skip Annotation</label>
+    </div>
+    <div class=\"step-box\">
+      <h3>Classification</h3>
+      <label><input type=\"checkbox\" id=\"skip-class\"> Skip Classification</label>
     </div>
   </details>
   <div id=\"content\">
@@ -309,7 +336,14 @@ template = """
         dark_threshold: parseFloat(document.getElementById('dark').value),
         margin: parseFloat(document.getElementById('margin').value),
         conf_threshold: parseFloat(document.getElementById('conf').value),
-        batch_size: parseInt(document.getElementById('batch').value)
+        batch_size: parseInt(document.getElementById('batch').value),
+        skip_extraction: document.getElementById('skip-extract').checked,
+        skip_deduplication: document.getElementById('skip-dedup').checked,
+        skip_filtering: document.getElementById('skip-filter').checked,
+        skip_upscaling: document.getElementById('skip-upscale').checked,
+        skip_cropping: document.getElementById('skip-crop').checked,
+        skip_annotation: document.getElementById('skip-annot').checked,
+        skip_classification: document.getElementById('skip-class').checked
       };
     }
 
@@ -377,6 +411,13 @@ def start():
     margin = float(data.get('margin', 0.3))
     conf_threshold = float(data.get('conf_threshold', 0.5))
     batch_size = int(data.get('batch_size', 4))
+    skip_extraction = bool(data.get('skip_extraction'))
+    skip_deduplication = bool(data.get('skip_deduplication'))
+    skip_filtering = bool(data.get('skip_filtering'))
+    skip_upscaling = bool(data.get('skip_upscaling'))
+    skip_cropping = bool(data.get('skip_cropping'))
+    skip_annotation = bool(data.get('skip_annotation'))
+    skip_classification = bool(data.get('skip_classification'))
 
     status = 'Processing'
     progress = {"step": 0, "total": 8, "name": "Queued"}
@@ -404,6 +445,12 @@ def start():
                         margin=margin,
                         conf_threshold=conf_threshold,
                         batch_size=batch_size,
+                        skip_deduplication=skip_deduplication,
+                        skip_filtering=skip_filtering,
+                        skip_upscaling=skip_upscaling,
+                        skip_cropping=skip_cropping,
+                        skip_annotation=skip_annotation,
+                        skip_classification=skip_classification,
                     )
                     results.append(Path(zip_result).name)
                     video.unlink()
